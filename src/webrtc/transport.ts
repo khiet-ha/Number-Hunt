@@ -2,6 +2,11 @@ import type { PlayerId } from "@/game/types"
 import type { LinkState, Transport, TransportHandlers } from "@/multiplayer/env"
 import { PeerLink, type PeerLinkOptions } from "./peer"
 
+interface Waiter {
+  resolve(): void
+  reject(err: Error): void
+}
+
 /**
  * Map<PlayerId, PeerLink>. At most one link per remote player: a new link for
  * the same player replaces (and closes) the old one, and events from replaced
@@ -13,7 +18,7 @@ export class WebRtcTransport implements Transport {
   private links = new Map<PlayerId, PeerLink>()
   private handlers: TransportHandlers | null = null
   private buffer: Array<(h: TransportHandlers) => void> = []
-  private openWaiters = new Map<PlayerId, Array<() => void>>()
+  private openWaiters = new Map<PlayerId, Waiter[]>()
 
   constructor(private readonly opts: PeerLinkOptions) {}
 
@@ -37,14 +42,17 @@ export class WebRtcTransport implements Transport {
   /** Associate a link with a player; replaces any previous link. */
   bind(peer: PlayerId, link: PeerLink): void {
     const old = this.links.get(peer)
-    if (old && old !== link) old.close()
+    // Swap first: the old link's close event must fail the "current link"
+    // guard below, otherwise the core sees a spurious `closed` for a peer
+    // whose replacement link is still connecting.
     this.links.set(peer, link)
+    if (old && old !== link) old.close()
     link.onState = (s) => {
       if (this.links.get(peer) !== link) return
       if (s === "connected") {
         const ws = this.openWaiters.get(peer) ?? []
         this.openWaiters.delete(peer)
-        ws.forEach((w) => w())
+        ws.forEach((w) => w.resolve())
       }
       this.emit((h) => h.onLinkState(peer, s))
     }
@@ -59,14 +67,30 @@ export class WebRtcTransport implements Transport {
   waitOpen(peer: PlayerId, timeoutMs: number): Promise<void> {
     if (this.linkState(peer) === "connected") return Promise.resolve()
     return new Promise((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error("timeout")), timeoutMs)
+      const waiter: Waiter = {
+        resolve: () => {
+          clearTimeout(timer)
+          resolve()
+        },
+        reject: (err) => {
+          clearTimeout(timer)
+          reject(err)
+        },
+      }
+      const timer = setTimeout(() => {
+        this.dropWaiter(peer, waiter)
+        reject(new Error("timeout"))
+      }, timeoutMs)
       const list = this.openWaiters.get(peer) ?? []
-      list.push(() => {
-        clearTimeout(t)
-        resolve()
-      })
+      list.push(waiter)
       this.openWaiters.set(peer, list)
     })
+  }
+
+  private dropWaiter(peer: PlayerId, waiter: Waiter) {
+    const rest = (this.openWaiters.get(peer) ?? []).filter((w) => w !== waiter)
+    if (rest.length) this.openWaiters.set(peer, rest)
+    else this.openWaiters.delete(peer)
   }
 
   send(to: PlayerId, data: string): boolean {
@@ -106,6 +130,10 @@ export class WebRtcTransport implements Transport {
   }
 
   closeAll(): void {
+    // Settle pending waitOpen() calls so callers do not fire late timeouts.
+    for (const ws of this.openWaiters.values())
+      ws.forEach((w) => w.reject(new Error("closed")))
+    this.openWaiters.clear()
     for (const l of this.links.values()) l.close()
   }
 }
