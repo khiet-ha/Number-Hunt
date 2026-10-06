@@ -153,7 +153,10 @@ export function applyEvent(
       layoutVersion: 0,
       scores: Object.fromEntries(members.map((m) => [m.id, 0])),
       claimed: {},
-      leadership: { hostId: p.hostId, term: event.term },
+      // Always term 0 (the lobby term), never the entry's term: a GAME_STARTED
+      // carried into a later term must produce the same state, and the new
+      // leader's HOST_CHANGED must still be > leadership.term.
+      leadership: { hostId: p.hostId, term: 0 },
       logIndex: event.index,
     }
   }
