@@ -17,6 +17,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "i18next": "^26.4.2",
     "jsqr": "^1.4.0",
     "preact": "^11.0.0",
     "qrcode-generator": "^2.0.4"
