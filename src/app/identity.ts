@@ -1,4 +1,4 @@
-import type { KeyValueStore } from "../multiplayer/env";
+import type { KeyValueStore } from "@/multiplayer/env";
 
 /** Per-tab session (sessionStorage): survives reload, not shared between tabs. */
 export interface Session {

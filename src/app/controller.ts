@@ -1,7 +1,7 @@
-import type { GameConfig } from "../game/types";
-import { DEFAULT_CONFIG } from "../game/types";
-import { EventLogger, type KeyValueStore } from "../multiplayer/env";
-import { GameNode, loadPersisted, sanitizeName } from "../multiplayer/node";
+import type { GameConfig } from "@/game/types";
+import { DEFAULT_CONFIG } from "@/game/types";
+import { EventLogger, type KeyValueStore } from "@/multiplayer/env";
+import { GameNode, loadPersisted, sanitizeName } from "@/multiplayer/node";
 import {
   checkAnswer,
   decodeAnswer,
@@ -11,10 +11,10 @@ import {
   offerUrl,
   type InviteKind,
   type OpenInvite,
-} from "../qr/envelope";
-import type { PeerLink } from "../webrtc/peer";
-import { DEFAULT_ICE } from "../webrtc/peer";
-import { WebRtcTransport } from "../webrtc/transport";
+} from "@/qr/envelope";
+import type { PeerLink } from "@/webrtc/peer";
+import { DEFAULT_ICE } from "@/webrtc/peer";
+import { WebRtcTransport } from "@/webrtc/transport";
 import { loadSession, newRoomId, newSession, randomToken, saveName, saveSession, sha256Hex, type Session } from "./identity";
 
 /**
