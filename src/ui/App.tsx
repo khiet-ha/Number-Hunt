@@ -114,7 +114,7 @@ export function App({ c, debug }: { c: AppController; debug: boolean }) {
     check();
     addEventListener("hashchange", check);
     return () => removeEventListener("hashchange", check);
-  }, []);
+  }, [c]);
   const s = c.state.screen;
   const v = c.node?.getView() ?? null;
   return (
