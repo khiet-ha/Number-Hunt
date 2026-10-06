@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { generateBoard } from "../src/game/board";
-import { generateTargets } from "../src/game/generator";
-import { checkInvariants } from "../src/game/invariants";
-import { applyEvent, currentTarget, quorumSize, stateHash, validateEvent } from "../src/game/reducer";
-import type { GameConfig, GameEvent, GameState, Member } from "../src/game/types";
-import { DEFAULT_CONFIG } from "../src/game/types";
+import { generateBoard } from "@/game/board";
+import { generateTargets } from "@/game/generator";
+import { checkInvariants } from "@/game/invariants";
+import { applyEvent, currentTarget, quorumSize, stateHash, validateEvent } from "@/game/reducer";
+import type { GameConfig, GameEvent, GameState, Member } from "@/game/types";
+import { DEFAULT_CONFIG } from "@/game/types";
 
 const members: Member[] = [
   { id: "a", name: "A", color: "#f00", joinSequence: 1, secretHash: "x" },
