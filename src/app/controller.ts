@@ -292,6 +292,7 @@ export class AppController {
 
   /** Player scanned the Host's (or a member's) offer: create the answer QR. */
   async acceptOffer(offerText: string, name: string) {
+    let transport: WebRtcTransport | null = null
     try {
       this.set({ busy: true, error: null })
       const o = await decodeOffer(offerText)
@@ -315,7 +316,7 @@ export class AppController {
         this.session = session
         saveSession(this.opts.store, session)
       }
-      const transport = this.newTransport()
+      transport = this.newTransport()
       const link = transport.createUnbound()
       transport.bind(o.h, link)
       const sdp = await link.acceptOffer(o.s)
@@ -348,6 +349,8 @@ export class AppController {
       })
       this.attachNode(node)
     } catch (e) {
+      // Cancelled or superseded (backHome, a newer join): nothing to report.
+      if (transport && this.transport !== transport) return
       if (e instanceof Error && e.message === "timeout")
         this.fail(new Error("Không kết nối được. Hãy thử lại với mã mời mới."))
       else this.fail(e)
