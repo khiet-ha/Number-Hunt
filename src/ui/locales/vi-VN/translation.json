@@ -1,9 +1,11 @@
 {
   "answer": {
     "copy": "Sao chép mã trả lời",
+    "elapsed": "Đã chờ {{seconds}} giây",
     "qrLabel": "Mã trả lời",
     "showToHost": "Đưa màn hình này cho Host quét.",
     "showToInviter": "Đưa màn hình này cho người đã mời bạn quét.",
+    "slowHint": "Chưa nối được? Kiểm tra: Host đã quét mã trả lời của bạn chưa · cả hai máy dùng cùng Wi‑Fi (tránh 4G) · thử lại bằng mã mời mới.",
     "title": "Gần xong!",
     "titleRejoin": "Vào lại trận",
     "waiting": "Đang chờ kết nối…"
@@ -62,6 +64,7 @@
     "notMember": "Người này không thuộc trận đấu",
     "offerInvalid": "Mã mời không hợp lệ",
     "offerVersion": "Phiên bản mã mời không được hỗ trợ",
+    "openElsewhere": "Trận này đang mở ở một tab khác",
     "roomFull": "Phòng đã đủ người",
     "selfJoin": "Không thể tự tham gia phòng của mình",
     "unexpected": "Có lỗi xảy ra: {{detail}}",
@@ -83,6 +86,7 @@
     "menu": "Menu",
     "nextRules": "Đổi luật cho ván sau",
     "noTarget": "Hết số!",
+    "offline": "Mất kết nối: {{names}}",
     "paused": "Tạm dừng",
     "pausedDetail": "Cần ít nhất {{quorum}}/{{total}} người online để tiếp tục ({{alive}} đang online)",
     "rematch": "Chơi ván mới",
@@ -96,16 +100,21 @@
     "forgetGame": "Bỏ trận này",
     "namePlaceholder": "Ví dụ: Lan",
     "pasteInvite": "Dán link / mã mời",
-    "resume": "Bạn đang có một trận dở trong phòng {{roomId}}. Nhờ một người trong phòng mở “Mời người chơi bị rớt vào lại” rồi quét mã của họ.",
     "scanInvite": "Quét mã mời",
     "scanRejoin": "Quét mã vào lại"
   },
   "invite": {
+    "autoRenew": "Mã mời tự đổi mới khi hết hạn.",
     "copyLink": "Sao chép link mời",
     "creating": "Đang tạo mã mời…",
+    "expired": "Mã đã hết hạn",
+    "expiresIn": "Mã hết hạn sau {{time}}",
     "pasteAnswer": "Dán mã trả lời bằng tay",
     "qrLabel": "Mã mời",
+    "renew": "Tạo mã mới",
     "scanAnswer": "Quét mã trả lời",
+    "share": "Chia sẻ link mời",
+    "shareText": "Vào phòng {{roomId}} chơi Tìm Số cùng mình!",
     "step1": "Người chơi quét mã này bằng camera điện thoại.",
     "step2": "Họ sẽ thấy một mã trả lời — bấm “Quét mã trả lời” để quét.",
     "submit": "Xác nhận",
@@ -113,11 +122,19 @@
     "titleRejoin": "Mời vào lại"
   },
   "join": {
+    "decoding": "Đang đọc mã mời…",
+    "hint": "Nên ở gần Host và dùng cùng Wi‑Fi để kết nối ổn định.",
     "preparing": "Đang chuẩn bị…",
+    "rejoinAction": "Vào lại",
+    "rejoinBody": "Bạn sẽ vào lại với tên {{name}} và điểm số cũ.",
+    "rejoinTitle": "Vào lại phòng {{roomId}}",
+    "roomLabel": "Phòng {{roomId}}",
     "title": "Tham gia phòng"
   },
   "lobby": {
     "entering": "Đang vào phòng…",
+    "kick": "Loại",
+    "kickConfirm": "Loại {{name}} khỏi phòng?",
     "linked": "kết nối",
     "linking": "đang nối…",
     "notReady": "Chưa sẵn sàng",
@@ -127,10 +144,18 @@
     "setReady": "Sẵn sàng",
     "start": "Bắt đầu",
     "unsetReady": "Huỷ sẵn sàng",
+    "waitingFirst": "Chưa có ai. Cho người chơi quét mã bên dưới để vào phòng.",
     "you": "(bạn)"
   },
   "notice": {
-    "connecting": "Đang kết nối {{name}}…"
+    "connecting": "Đang kết nối {{name}}…",
+    "joined": "{{name}} đã vào phòng. Mã mới đã sẵn sàng cho người tiếp theo.",
+    "rejoined": "{{name}} đã vào lại phòng."
+  },
+  "qr": {
+    "brightness": "Tăng độ sáng màn hình để dễ quét hơn.",
+    "shrink": "Thu nhỏ",
+    "zoom": "Phóng to mã"
   },
   "reject": {
     "claimed": "Số đã được tìm",
@@ -144,8 +169,19 @@
     "unknown": "Không ghi nhận lượt bấm",
     "wrongNumber": "Sai số!"
   },
+  "resume": {
+    "forgetConfirm": "Bỏ trận này? Bạn sẽ không vào lại được nữa.",
+    "keepScore": "Bạn sẽ vào lại đúng chỗ cũ với điểm số cũ. Dù bạn từng là Host, trận vẫn chạy tiếp nhờ một người khác được bầu làm Host.",
+    "lastSeen": "Lần cuối bạn ở trong phòng: {{ago}}",
+    "openElsewhere": "Trận này đang mở ở một tab khác. Hãy dùng tab đó để chơi tiếp, hoặc đóng nó rồi thử lại sau vài giây.",
+    "pasteCode": "Dán mã vào lại",
+    "step1": "Nhờ một người đang trong phòng bấm “Mời người chơi bị rớt vào lại” (trong menu ☰ hoặc ở thanh cảnh báo).",
+    "step2": "Quét mã họ đưa ra (hoặc dán mã).",
+    "title": "Trận đang dở trong phòng {{roomId}}"
+  },
   "scanner": {
     "close": "Đóng camera",
+    "hint": "Đưa mã QR vào giữa khung hình.",
     "noPermission": "Không mở được camera. Hãy cấp quyền camera hoặc dán mã bằng tay.",
     "unsupported": "Trình duyệt không hỗ trợ camera (cần HTTPS)."
   },
@@ -157,5 +193,15 @@
     "MIGRATING": "Đang bầu Host mới…",
     "PAUSED": "Tạm dừng — chờ đủ người",
     "SYNCING": "Đang đồng bộ…"
+  },
+  "steps": {
+    "guestScan": "Quét mã mời",
+    "guestShow": "Đưa mã trả lời cho Host",
+    "guestShowRejoin": "Đưa mã trả lời cho người đã mời bạn",
+    "guestWait": "Chờ hai máy nối với nhau",
+    "hostDone": "Hai máy tự kết nối",
+    "hostScan": "Bạn quét mã trả lời của họ",
+    "hostShow": "Người chơi quét mã mời",
+    "label": "Bước {{current}}/{{total}}"
   }
 }

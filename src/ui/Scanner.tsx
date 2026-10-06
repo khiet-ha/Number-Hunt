@@ -101,7 +101,12 @@ export function Scanner({
       {error ? (
         <p class="error">{t(`scanner.${error}`)}</p>
       ) : (
-        <video ref={video} playsInline muted />
+        <>
+          <div class="scan-frame">
+            <video ref={video} playsInline muted />
+          </div>
+          <p class="muted">{t("scanner.hint")}</p>
+        </>
       )}
       <button class="secondary" onClick={onClose}>
         {t("scanner.close")}
