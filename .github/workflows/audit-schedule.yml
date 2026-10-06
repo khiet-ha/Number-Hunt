@@ -56,7 +56,7 @@ jobs:
             const full = read(process.env.RUNNER_TEMP + "/full.json");
             const prod = read(process.env.RUNNER_TEMP + "/prod.json");
             const out = (k, v) => appendFileSync(process.env.GITHUB_OUTPUT, `${k}=${v}\n`);
-            if (!full) { out("usable", "false"); out("total", "0"); out("highplus", "0"); out("prod", "0"); process.exit(0); }
+            if (!full || typeof full.advisories !== "object" || (prod && typeof prod.advisories !== "object")) { out("usable", "false"); out("total", "0"); out("highplus", "0"); out("prod", "0"); process.exit(0); }
             const advs = Object.entries(full.advisories ?? {});
             const prodIds = new Set(Object.keys(prod?.advisories ?? {}));
             out("usable", "true");
