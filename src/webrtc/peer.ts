@@ -1,4 +1,4 @@
-import type { LinkState } from "../multiplayer/env";
+import type { LinkState } from "@/multiplayer/env";
 
 /**
  * One RTCPeerConnection + one reliable, ordered DataChannel.

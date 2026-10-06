@@ -1,5 +1,5 @@
-import type { PlayerId } from "../game/types";
-import type { LinkState, Transport, TransportHandlers } from "../multiplayer/env";
+import type { PlayerId } from "@/game/types";
+import type { LinkState, Transport, TransportHandlers } from "@/multiplayer/env";
 import { PeerLink, type PeerLinkOptions } from "./peer";
 
 /**
