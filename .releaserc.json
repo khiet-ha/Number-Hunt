@@ -1,0 +1,31 @@
+{
+  "branches": [
+    "master",
+    { "name": "develop", "prerelease": "beta", "channel": "beta" }
+  ],
+  "tagFormat": "v${version}",
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits",
+        "releaseRules": [
+          { "type": "hotfix", "release": "patch" },
+          { "type": "release", "release": "patch" }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      { "preset": "conventionalcommits" }
+    ],
+    [
+      "@semantic-release/exec",
+      { "verifyReleaseCmd": "echo ${nextRelease.version} > .release-version" }
+    ],
+    [
+      "@semantic-release/github",
+      { "successComment": false, "failTitle": false }
+    ]
+  ]
+}
