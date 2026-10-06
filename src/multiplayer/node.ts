@@ -811,7 +811,10 @@ export class GameNode {
         return this.onLeave(from)
       case "JOIN_REJECT":
       case "ROOM_CLOSED":
-        if (this.kind === "lobby" && from === this.lobby?.hostId)
+        if (
+          this.kind === "lobby" &&
+          from === (this.lobby?.hostId ?? this.expectedHostId)
+        )
           this.close((env.payload as { reason: string }).reason)
         return
       case "CLICK_REQUEST":
@@ -973,6 +976,11 @@ export class GameNode {
     )
     if (this.lobby.players.length !== before) {
       this.log("local", "GUEST_REMOVED", { peer: id })
+      // The broadcast no longer reaches the removed guest, so tell it directly
+      // (if the link still works) instead of letting it time out as "hostLeft".
+      // The link is left open so the message is not dropped by the close; the
+      // guest closes on receipt and its later messages are ignored as unknown.
+      this.send(id, "JOIN_REJECT", { reason: "removed" })
       this.broadcastLobby()
     }
   }
