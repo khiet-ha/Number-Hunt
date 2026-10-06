@@ -28,6 +28,7 @@
   },
   "common": {
     "cancel": "Cancel",
+    "close": "Close",
     "copied": "Copied",
     "join": "Join",
     "language": "Language",
@@ -183,7 +184,11 @@
     "close": "Close camera",
     "hint": "Point the camera at the QR code.",
     "noPermission": "Could not open the camera. Allow camera access or paste the code manually.",
-    "unsupported": "This browser cannot use the camera (HTTPS required)."
+    "paste": "Paste the code instead",
+    "pasteHint": "Paste the code you received below.",
+    "title": "Scan QR code",
+    "unsupported": "This browser cannot use the camera (HTTPS required).",
+    "useCamera": "Use camera"
   },
   "status": {
     "ACTIVE": "Connected",
