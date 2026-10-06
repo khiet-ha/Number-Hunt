@@ -8,6 +8,7 @@ import {
   decodeOffer,
   encodeAnswer,
   encodeOffer,
+  INVITE_TTL_MS,
   offerUrl,
   type InviteKind,
   type OpenInvite,
@@ -60,6 +61,8 @@ export interface AppOptions {
 }
 
 const CONNECT_TIMEOUT_MS = 120_000
+/** Renew the open join invite this long before it expires. */
+const INVITE_RENEW_MARGIN_MS = 30_000
 
 export class AppController {
   state: AppState = {
@@ -76,6 +79,7 @@ export class AppController {
   private invites = new Map<string, { link: PeerLink; info: OpenInvite }>()
   private listeners = new Set<() => void>()
   private unsubNode: (() => void) | null = null
+  private inviteTimer: ReturnType<typeof setInterval> | null = null
 
   constructor(private readonly opts: AppOptions) {
     this.session = loadSession(opts.store)
@@ -158,6 +162,10 @@ export class AppController {
       })
       this.attachNode(node)
       await this.createInvite("join")
+      // Node notifications stop when the Host is alone in the lobby, so the
+      // invite expiry check also runs on a timer.
+      this.stopInviteTimer()
+      this.inviteTimer = setInterval(() => this.maintainInvite(), 10_000)
     } catch (e) {
       this.fail(e)
     }
@@ -171,11 +179,25 @@ export class AppController {
     if (node.isLobbyHost()) {
       if (!inv && node.canAcceptGuests() && !this.state.busy)
         void this.createInvite("join")
+      // An invite is only valid for INVITE_TTL_MS; replace it before the
+      // Host's lobby silently stops accepting answers.
+      if (
+        inv &&
+        inv.kind === "join" &&
+        !this.state.busy &&
+        Date.now() - inv.createdAt > INVITE_TTL_MS - INVITE_RENEW_MARGIN_MS
+      )
+        void this.createInvite("join")
       if (inv && inv.kind === "join" && !node.canAcceptGuests())
         this.cancelInvite()
     } else if (inv && inv.kind === "join") {
       this.cancelInvite()
     }
+  }
+
+  private stopInviteTimer() {
+    if (this.inviteTimer) clearInterval(this.inviteTimer)
+    this.inviteTimer = null
   }
 
   cancelInvite() {
@@ -335,6 +357,7 @@ export class AppController {
   // ---------------------------------------------------------------- Common
 
   leave() {
+    this.stopInviteTimer()
     this.node?.leave()
     this.node?.stop()
     this.unsubNode?.()
