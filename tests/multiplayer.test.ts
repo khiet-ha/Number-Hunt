@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { checkInvariants } from "../src/game/invariants";
-import { currentTarget } from "../src/game/reducer";
-import type { GameEvent } from "../src/game/types";
+import { checkInvariants } from "@/game/invariants";
+import { currentTarget } from "@/game/reducer";
+import type { GameEvent } from "@/game/types";
 import { converged, hashes, inject, injectRaw, logHas, totalScore } from "./helpers";
 import { createGame, createLobby, target, type Room } from "./sim";
 

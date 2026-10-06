@@ -1,9 +1,9 @@
-import type { Clock, LinkState, Transport, TransportHandlers } from "../src/multiplayer/env";
-import { EventLogger, MemoryStore } from "../src/multiplayer/env";
-import { GameNode, type NodeMode, type Timings } from "../src/multiplayer/node";
-import { mulberry32 } from "../src/game/rng";
-import type { GameConfig, PlayerId } from "../src/game/types";
-import { DEFAULT_CONFIG } from "../src/game/types";
+import type { Clock, LinkState, Transport, TransportHandlers } from "@/multiplayer/env";
+import { EventLogger, MemoryStore } from "@/multiplayer/env";
+import { GameNode, type NodeMode, type Timings } from "@/multiplayer/node";
+import { mulberry32 } from "@/game/rng";
+import type { GameConfig, PlayerId } from "@/game/types";
+import { DEFAULT_CONFIG } from "@/game/types";
 
 /** Deterministic virtual clock + timer queue. */
 export class SimClock implements Clock {

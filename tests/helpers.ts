@@ -1,6 +1,6 @@
-import { stateHash } from "../src/game/reducer";
-import type { GameNode } from "../src/multiplayer/node";
-import { PROTOCOL_VERSION, type Envelope, type MessageType, type Payloads } from "../src/multiplayer/protocol";
+import { stateHash } from "@/game/reducer";
+import type { GameNode } from "@/multiplayer/node";
+import { PROTOCOL_VERSION, type Envelope, type MessageType, type Payloads } from "@/multiplayer/protocol";
 import { roomId, type Room } from "./sim";
 
 let counter = 0;

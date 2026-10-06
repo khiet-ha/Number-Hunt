@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { checkInvariants } from "../src/game/invariants";
-import { mulberry32 } from "../src/game/rng";
-import type { GameState } from "../src/game/types";
+import { checkInvariants } from "@/game/invariants";
+import { mulberry32 } from "@/game/rng";
+import type { GameState } from "@/game/types";
 import { SafetyMonitor, converged } from "./helpers";
 import { createGame, target, type Room } from "./sim";
 
