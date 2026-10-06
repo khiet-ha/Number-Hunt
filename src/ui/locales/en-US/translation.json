@@ -181,7 +181,6 @@
     "title": "Unfinished game in room {{roomId}}"
   },
   "scanner": {
-    "close": "Close camera",
     "hint": "Point the camera at the QR code.",
     "noPermission": "Could not open the camera. Allow camera access or paste the code manually.",
     "paste": "Paste the code instead",

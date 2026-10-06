@@ -92,6 +92,7 @@ export function Home({ c }: { c: AppController }) {
       </button>
       <button
         class="secondary"
+        data-testid="scan-invite"
         disabled={!valid}
         onClick={() => setScan("invite")}
       >

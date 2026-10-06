@@ -83,7 +83,11 @@ export function InvitePanel({ c, title }: { c: AppController; title: string }) {
             {copied ? t("common.copied") : t("invite.copyLink")}
           </button>
         )}
-        <button disabled={expired} onClick={() => setScanning(true)}>
+        <button
+          data-testid="scan-answer"
+          disabled={expired}
+          onClick={() => setScanning(true)}
+        >
           {t("invite.scanAnswer")}
         </button>
       </div>

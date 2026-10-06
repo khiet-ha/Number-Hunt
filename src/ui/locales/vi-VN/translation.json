@@ -181,7 +181,6 @@
     "title": "Trận đang dở trong phòng {{roomId}}"
   },
   "scanner": {
-    "close": "Đóng camera",
     "hint": "Đưa mã QR vào giữa khung hình.",
     "noPermission": "Không mở được camera. Hãy cấp quyền camera hoặc dán mã bằng tay.",
     "paste": "Dán mã thay vì quét",
