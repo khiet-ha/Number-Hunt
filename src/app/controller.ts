@@ -104,7 +104,7 @@ export class AppError extends Error {
 export interface AppState {
   screen: Screen
   error: AppMessage<AppErrorCode> | null
-  notice: AppMessage<"connecting" | "joined"> | null
+  notice: AppMessage<"connecting" | "joined" | "rejoined"> | null
   busy: boolean
   invite: InviteView | null
 }
@@ -140,6 +140,7 @@ export class AppController {
   private unsubNode: (() => void) | null = null
   private inviteTimer: ReturnType<typeof setInterval> | null = null
   private resumeTimer: ReturnType<typeof setInterval> | null = null
+  private lastResumeTouch = 0
   private readonly tabId: string
 
   constructor(private readonly opts: AppOptions) {
@@ -196,14 +197,22 @@ export class AppController {
   /** While in a started game, keep the resume record fresh (2s heartbeat). */
   private startResumeBeat() {
     this.stopResumeBeat()
-    const beat = () => {
-      const session = this.session
-      const state = this.node?.getView().state
-      if (session && state && state.phase !== "FINISHED")
-        touchResume(this.opts.persist, session, this.tabId, Date.now())
-    }
-    beat()
-    this.resumeTimer = setInterval(beat, RESUME_BEAT_MS)
+    this.resumeTimer = setInterval(
+      () => this.touchResumeRecord(),
+      RESUME_BEAT_MS
+    )
+    this.touchResumeRecord()
+  }
+
+  /** Called on the timer and on every node change, so the record exists as soon as the game does. */
+  private touchResumeRecord() {
+    const session = this.session
+    const state = this.node?.getView().state
+    if (!session || !state || state.phase === "FINISHED") return
+    const now = Date.now()
+    if (now - this.lastResumeTouch < 1000) return
+    this.lastResumeTouch = now
+    touchResume(this.opts.persist, session, this.tabId, now)
   }
 
   private stopResumeBeat() {
@@ -226,6 +235,7 @@ export class AppController {
     this.unsubNode = node.subscribe(() => {
       this.maintainInvite()
       this.confirmConnecting(node)
+      this.touchResumeRecord()
       for (const fn of this.listeners) fn()
     })
     this.startResumeBeat()
@@ -238,9 +248,10 @@ export class AppController {
     if (n?.code !== "connecting" || !n.params?.id) return
     const peer = node.getView().peers.find((p) => p.id === n.params?.id)
     if (peer?.link !== "connected") return
-    this.set({ notice: { code: "joined", params: n.params } })
+    const code = n.params.kind === "rejoin" ? "rejoined" : "joined"
+    this.set({ notice: { code, params: n.params } })
     setTimeout(() => {
-      if (this.state.notice?.code === "joined") this.set({ notice: null })
+      if (this.state.notice?.code === code) this.set({ notice: null })
     }, 4000)
   }
 
@@ -379,7 +390,10 @@ export class AppController {
       await entry.link.acceptAnswer(a.s)
       this.set({
         invite: null,
-        notice: { code: "connecting", params: { name: a.m, id: a.p } },
+        notice: {
+          code: "connecting",
+          params: { name: a.m, id: a.p, kind: entry.info.kind },
+        },
         error: null,
       })
       if (entry.info.kind === "join") this.maintainInvite()
@@ -402,12 +416,18 @@ export class AppController {
       error: null,
     })
     decodeOffer(offerText).then(
-      (o) =>
+      (o) => {
         this.setJoinPeek(
           offerText,
           { roomId: o.r, kind: o.k, inviterId: o.h },
           null
-        ),
+        )
+        // Nothing to confirm when coming back to a game we are part of: the
+        // player already chose to rejoin by scanning, so go straight on.
+        const info = o.k === "rejoin" ? this.resumable() : null
+        if (info && info.roomId === o.r && info.status === "ready")
+          void this.acceptOffer(offerText, info.session.name)
+      },
       (e) =>
         this.setJoinPeek(
           offerText,
