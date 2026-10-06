@@ -1,0 +1,161 @@
+{
+  "answer": {
+    "copy": "Sao chép mã trả lời",
+    "qrLabel": "Mã trả lời",
+    "showToHost": "Đưa màn hình này cho Host quét.",
+    "showToInviter": "Đưa màn hình này cho người đã mời bạn quét.",
+    "title": "Gần xong!",
+    "titleRejoin": "Vào lại trận",
+    "waiting": "Đang chờ kết nối…"
+  },
+  "app": {
+    "tagline": "Chơi cùng nhau trên nhiều điện thoại, không cần máy chủ.",
+    "title": "Tìm Số"
+  },
+  "blocker": {
+    "meshIncomplete": "Các máy đang kết nối với nhau…",
+    "needPlayers": "Cần ít nhất 2 người chơi",
+    "notReady": "Chưa phải ai cũng sẵn sàng"
+  },
+  "close": {
+    "backHome": "Về trang chủ",
+    "hostLeft": "Host đã rời phòng chờ. Phòng đã đóng.",
+    "left": "Bạn đã rời phòng.",
+    "removed": "Bạn đã bị loại khỏi phòng.",
+    "unknown": "Phòng đã đóng."
+  },
+  "common": {
+    "cancel": "Huỷ",
+    "copied": "Đã sao chép",
+    "join": "Tham gia",
+    "language": "Ngôn ngữ",
+    "yourName": "Tên của bạn"
+  },
+  "config": {
+    "fixedStep": "Bước cố định",
+    "mode": "Chế độ",
+    "modeRandom": "Ngẫu nhiên (xáo bàn sau mỗi số)",
+    "modeTraditional": "Truyền thống (bàn cố định)",
+    "numberCount": "Số lượng số",
+    "numberMode": "Dãy số",
+    "playerLimit": "Số người tối đa",
+    "randomStep": "Bước ngẫu nhiên",
+    "randomSteps": "Các bước có thể (phân cách bằng dấu phẩy)",
+    "sequential": "Liên tiếp 1, 2, 3…",
+    "sizeLarge": "Lớn",
+    "sizeMode": "Cỡ chữ",
+    "sizeRandom": "Ngẫu nhiên",
+    "sizeSmall": "Nhỏ",
+    "step": "Bước"
+  },
+  "errors": {
+    "answerInvalid": "Mã trả lời không hợp lệ",
+    "answerNotPlayer": "Đây không phải mã trả lời của người chơi",
+    "answerVersion": "Phiên bản mã trả lời không được hỗ trợ",
+    "authFailed": "Không xác thực được người chơi",
+    "connectTimeout": "Không kết nối được. Hãy thử lại với mã mời mới.",
+    "gameStarted": "Trận đã bắt đầu, không thể tham gia",
+    "inviteExpired": "Mã mời đã hết hạn",
+    "inviteUsed": "Mã mời đã được dùng hoặc không còn hiệu lực",
+    "nameInvalid": "Tên người chơi không hợp lệ",
+    "noPreviousSession": "Thiết bị/tab này không có phiên chơi trước của phòng {{roomId}}",
+    "notMember": "Người này không thuộc trận đấu",
+    "offerInvalid": "Mã mời không hợp lệ",
+    "offerVersion": "Phiên bản mã mời không được hỗ trợ",
+    "roomFull": "Phòng đã đủ người",
+    "selfJoin": "Không thể tự tham gia phòng của mình",
+    "unexpected": "Có lỗi xảy ra: {{detail}}",
+    "wrongHost": "Mã trả lời dành cho người khác",
+    "wrongRoom": "Mã trả lời thuộc phòng khác"
+  },
+  "game": {
+    "countdownGo": "Bắt đầu!",
+    "desync": "Lỗi đồng bộ dữ liệu",
+    "desyncDetail": "Đang yêu cầu lại dữ liệu từ Host…",
+    "electing": "Đang bầu Host mới ({{alive}}/{{total}} người online)",
+    "electingNoQuorum": "Chưa đủ người để bầu Host mới: {{alive}}/{{total}} online, cần {{quorum}}. Trận tạm dừng cho tới khi có người quay lại.",
+    "find": "Tìm",
+    "finished": "Kết thúc!",
+    "hostLost": "Host mất kết nối",
+    "inviteBack": "Mời người chơi bị rớt vào lại",
+    "leave": "Rời phòng",
+    "leaveConfirm": "Rời trận? Bạn vẫn được tính trong số người chơi.",
+    "menu": "Menu",
+    "nextRules": "Đổi luật cho ván sau",
+    "noTarget": "Hết số!",
+    "paused": "Tạm dừng",
+    "pausedDetail": "Cần ít nhất {{quorum}}/{{total}} người online để tiếp tục ({{alive}} đang online)",
+    "rematch": "Chơi ván mới",
+    "resumeNewHost": "Tiếp tục với Host mới",
+    "roomInfo": "Phòng {{roomId}} · term {{term}} · {{alive}}/{{total}} online",
+    "syncing": "Đang đồng bộ trận đấu…",
+    "waitRematch": "Chờ Host bắt đầu ván mới…"
+  },
+  "home": {
+    "create": "Tạo phòng",
+    "forgetGame": "Bỏ trận này",
+    "namePlaceholder": "Ví dụ: Lan",
+    "pasteInvite": "Dán link / mã mời",
+    "resume": "Bạn đang có một trận dở trong phòng {{roomId}}. Nhờ một người trong phòng mở “Mời người chơi bị rớt vào lại” rồi quét mã của họ.",
+    "scanInvite": "Quét mã mời",
+    "scanRejoin": "Quét mã vào lại"
+  },
+  "invite": {
+    "copyLink": "Sao chép link mời",
+    "creating": "Đang tạo mã mời…",
+    "pasteAnswer": "Dán mã trả lời bằng tay",
+    "qrLabel": "Mã mời",
+    "scanAnswer": "Quét mã trả lời",
+    "step1": "Người chơi quét mã này bằng camera điện thoại.",
+    "step2": "Họ sẽ thấy một mã trả lời — bấm “Quét mã trả lời” để quét.",
+    "submit": "Xác nhận",
+    "titleJoin": "Mời người chơi",
+    "titleRejoin": "Mời vào lại"
+  },
+  "join": {
+    "preparing": "Đang chuẩn bị…",
+    "title": "Tham gia phòng"
+  },
+  "lobby": {
+    "entering": "Đang vào phòng…",
+    "linked": "kết nối",
+    "linking": "đang nối…",
+    "notReady": "Chưa sẵn sàng",
+    "ready": "Sẵn sàng",
+    "room": "Phòng",
+    "rules": "Luật chơi",
+    "setReady": "Sẵn sàng",
+    "start": "Bắt đầu",
+    "unsetReady": "Huỷ sẵn sàng",
+    "you": "(bạn)"
+  },
+  "notice": {
+    "connecting": "Đang kết nối {{name}}…"
+  },
+  "reject": {
+    "claimed": "Số đã được tìm",
+    "lostRace": "Chậm hơn một chút!",
+    "noQuorum": "Đang chờ đủ người",
+    "notHost": "Host vừa đổi",
+    "phase": "Chưa thể bấm",
+    "reserved": "Có người nhanh hơn!",
+    "staleTerm": "Host vừa đổi",
+    "timeout": "Mất kết nối Host",
+    "unknown": "Không ghi nhận lượt bấm",
+    "wrongNumber": "Sai số!"
+  },
+  "scanner": {
+    "close": "Đóng camera",
+    "noPermission": "Không mở được camera. Hãy cấp quyền camera hoặc dán mã bằng tay.",
+    "unsupported": "Trình duyệt không hỗ trợ camera (cần HTTPS)."
+  },
+  "status": {
+    "ACTIVE": "Đã kết nối",
+    "CLOSED": "Đã đóng",
+    "DESYNC": "Lỗi đồng bộ",
+    "LOBBY": "Phòng chờ",
+    "MIGRATING": "Đang bầu Host mới…",
+    "PAUSED": "Tạm dừng — chờ đủ người",
+    "SYNCING": "Đang đồng bộ…"
+  }
+}
