@@ -1,0 +1,233 @@
+name: Auto PR
+
+on:
+  push:
+    branches:
+      - 'feat/**'
+      - 'fix/**'
+      - 'docs/**'
+      - 'chore/**'
+      - 'refactor/**'
+      - 'perf/**'
+      - 'test/**'
+      - 'ci/**'
+      - 'hotfix/**'
+
+permissions:
+  pull-requests: write
+  issues: write # createLabel / addLabels dùng scope issues — thiếu là 403
+  contents: read
+
+# Hai push liên tiếp mà chạy song song thì cả hai đều thấy "chưa có PR"
+# → run thứ hai gọi pulls.create và nhận 422.
+concurrency:
+  group: pr-auto-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-auto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Auto PR — create, label & update description
+        uses: actions/github-script@v9
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        with:
+          # PR tạo bằng GITHUB_TOKEN sẽ KHÔNG kích hoạt workflow `pull_request`.
+          # Có RELEASE_TOKEN (PAT/App) thì PR trigger CI như người tạo tay.
+          # KHÔNG có thì PR này sẽ không có check nào chạy — ci.yml của repo chỉ
+          # trigger `pull_request` + `workflow_dispatch`, không có `push`. Khi đó
+          # `ci ok` không bao giờ xanh và PR bị chặn nếu nó là required check.
+          github-token: ${{ secrets.RELEASE_TOKEN || github.token }}
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+
+            // --- Determine target branch ---
+            const targetBranch = branch.startsWith('hotfix/') ? 'master' : 'develop';
+
+            // --- Derive PR title from branch name ---
+            function derivePrTitle(branch) {
+              const match = branch.match(/^([a-z]+)\/(.+)$/);
+              if (!match) return branch;
+              const [, type, slug] = match;
+              // Title này bị commitlint check ở job `commits` của ci.yml, và rule
+              // subject-case chặn Sentence-case/UPPER-CASE. Nên: bỏ mã ticket ở
+              // đầu (FLEET-12-…) và hạ chữ cái đầu xuống thường.
+              let description = slug
+                .replace(/^[A-Za-z]+[-_]?\d+[-_]?/, '')
+                .replace(/[-_]/g, ' ')
+                .trim();
+              if (!description) description = slug.replace(/[-_]/g, ' ').trim();
+              description = description.charAt(0).toLowerCase() + description.slice(1);
+              return `${type}: ${description}`;
+            }
+            const prTitle = derivePrTitle(branch);
+
+            // --- Check if PR already exists ---
+            const { data: existingPrs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: 'open',
+            });
+
+            let prNumber;
+
+            if (existingPrs.length > 0) {
+              prNumber = existingPrs[0].number;
+              core.info(`PR #${prNumber} already exists for branch ${branch}`);
+            } else {
+              // Create new PR
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: prTitle,
+                head: branch,
+                base: targetBranch,
+                body: '',
+              });
+              prNumber = pr.number;
+              core.info(`Created PR #${prNumber}: ${prTitle}`);
+            }
+
+            // --- Get commits in branch (compared to target) ---
+            const { data: comparison } = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: targetBranch,
+              head: branch,
+            });
+
+            const commits = comparison.commits;
+
+            // --- Parse conventional commits ---
+            const typeLabels = {
+              feat:     { label: 'type: feature',  color: '0E8A16', heading: 'Features' },
+              fix:      { label: 'type: fix',      color: 'D93F0B', heading: 'Bug Fixes' },
+              docs:     { label: 'type: docs',     color: '0075CA', heading: 'Documentation' },
+              chore:    { label: 'type: chore',    color: 'EDEDED', heading: 'Chores' },
+              refactor: { label: 'type: refactor', color: 'FBCA04', heading: 'Refactors' },
+              perf:     { label: 'type: perf',     color: 'F9D0C4', heading: 'Performance' },
+              test:     { label: 'type: test',     color: '1D76DB', heading: 'Tests' },
+              ci:       { label: 'type: ci',       color: 'BFD4F2', heading: 'CI/CD' },
+            };
+
+            const grouped = {};
+            const labelsToAdd = new Set();
+            let hasBreaking = false;
+
+            for (const commit of commits) {
+              const msg = commit.commit.message;
+              const firstLine = msg.split('\n')[0];
+              const sha = commit.sha.substring(0, 7);
+
+              // Parse conventional commit: type(scope)!: description
+              const ccMatch = firstLine.match(/^([a-z]+)(?:\(.+?\))?(!)?\s*:\s*(.+)$/);
+
+              let type = 'other';
+              let description = firstLine;
+              let breaking = false;
+
+              if (ccMatch) {
+                type = ccMatch[1];
+                breaking = ccMatch[2] === '!';
+                description = ccMatch[3].trim();
+              }
+
+              // Check for BREAKING CHANGE in commit body
+              if (msg.includes('BREAKING CHANGE') || msg.includes('BREAKING-CHANGE')) {
+                breaking = true;
+              }
+
+              if (breaking) hasBreaking = true;
+
+              if (typeLabels[type]) {
+                if (!grouped[type]) grouped[type] = [];
+                grouped[type].push({ description, sha });
+                labelsToAdd.add(type);
+              } else {
+                if (!grouped['other']) grouped['other'] = [];
+                grouped['other'].push({ description, sha });
+              }
+            }
+
+            // --- Generate PR description ---
+            let body = '## Changes\n';
+
+            for (const [type, config] of Object.entries(typeLabels)) {
+              if (!grouped[type]) continue;
+              body += `\n### ${config.heading}\n`;
+              for (const { description, sha } of grouped[type]) {
+                body += `- ${description} (\`${sha}\`)\n`;
+              }
+            }
+
+            if (grouped['other']) {
+              body += '\n### Other\n';
+              for (const { description, sha } of grouped['other']) {
+                body += `- ${description} (\`${sha}\`)\n`;
+              }
+            }
+
+            const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            body += `\n---\n*Auto-generated from conventional commits. Last updated: ${now} UTC*\n`;
+
+            // Update PR description
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              body,
+            });
+            core.info('Updated PR description');
+
+            // --- Ensure labels exist and add them ---
+            const labelNames = [...labelsToAdd].map(t => typeLabels[t].label);
+            if (hasBreaking) labelNames.push('breaking change');
+
+            // Get existing repo labels
+            const { data: repoLabels } = await github.rest.issues.listLabelsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            const existingLabelNames = new Set(repoLabels.map(l => l.name));
+
+            // Create missing labels
+            const allLabelConfigs = {
+              ...Object.fromEntries(
+                Object.values(typeLabels).map(v => [v.label, v.color])
+              ),
+              'breaking change': 'B60205',
+            };
+
+            for (const labelName of labelNames) {
+              if (!existingLabelNames.has(labelName)) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: labelName,
+                  color: allLabelConfigs[labelName],
+                });
+                core.info(`Created label: ${labelName}`);
+              }
+            }
+
+            // Set labels on PR
+            if (labelNames.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: labelNames,
+              });
+              core.info(`Added labels: ${labelNames.join(', ')}`);
+            }
+
+            core.info('Done!');

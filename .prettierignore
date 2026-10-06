@@ -1,0 +1,9 @@
+dist
+coverage
+node_modules
+test-results
+playwright-report
+pnpm-lock.yaml
+CHANGELOG.md
+# Original design pack is kept verbatim for reference.
+docs/design-original

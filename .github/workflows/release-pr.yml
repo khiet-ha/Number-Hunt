@@ -1,0 +1,253 @@
+name: Release PR (develop → master)
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: 'Create PR as draft'
+        type: boolean
+        default: false
+      title_suffix:
+        description: 'Optional suffix appended to PR title (e.g. "v1.2.0", "2026-06-11")'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  pull-requests: write
+  issues: write # createLabel / addLabels dùng scope issues — thiếu là 403
+  contents: read
+
+concurrency:
+  group: release-pr
+  cancel-in-progress: false
+
+jobs:
+  release-pr:
+    name: Open release PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify develop is ahead of master
+        id: diff
+        run: |
+          git fetch origin master develop --no-tags
+          AHEAD=$(git rev-list --count origin/master..origin/develop)
+          BEHIND=$(git rev-list --count origin/develop..origin/master)
+          echo "ahead=$AHEAD" >> $GITHUB_OUTPUT
+          echo "behind=$BEHIND" >> $GITHUB_OUTPUT
+          echo "develop is $AHEAD commit(s) ahead of master, $BEHIND behind"
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "::error::develop has no new commits compared to master — nothing to release"
+            exit 1
+          fi
+
+      - name: Create or update release PR
+        uses: actions/github-script@v9
+        env:
+          DRAFT: ${{ inputs.draft }}
+          TITLE_SUFFIX: ${{ inputs.title_suffix }}
+        with:
+          # PR tạo bằng GITHUB_TOKEN không kích hoạt event `pull_request`.
+          # Không có RELEASE_TOKEN thì check `ci ok` vẫn có, nhờ ci.yml chạy
+          # theo trigger `push` trên develop (cùng SHA với head của PR này).
+          github-token: ${{ secrets.RELEASE_TOKEN || github.token }}
+          script: |
+            const head = 'develop';
+            const base = 'master';
+            const suffix = (process.env.TITLE_SUFFIX || '').trim();
+            const draft = process.env.DRAFT === 'true';
+
+            const today = new Date().toISOString().slice(0, 10);
+            const prTitle = suffix
+              ? `release: ${suffix}`
+              : `release: ${today}`;
+
+            // --- Find existing open release PR ---
+            const { data: existingPrs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${head}`,
+              base,
+              state: 'open',
+            });
+
+            let prNumber;
+            let prUrl;
+            let created = false;
+
+            if (existingPrs.length > 0) {
+              prNumber = existingPrs[0].number;
+              prUrl = existingPrs[0].html_url;
+              core.info(`Reusing open release PR #${prNumber}`);
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                title: prTitle,
+              });
+            } else {
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: prTitle,
+                head,
+                base,
+                body: '',
+                draft,
+              });
+              prNumber = pr.number;
+              prUrl = pr.html_url;
+              created = true;
+              core.info(`Created release PR #${prNumber}: ${prTitle}`);
+            }
+
+            // --- Compare commits develop vs master ---
+            const { data: comparison } = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base,
+              head,
+            });
+            const commits = comparison.commits;
+
+            // --- Parse conventional commits ---
+            const typeLabels = {
+              feat:     { label: 'type: feature',  color: '0E8A16', heading: 'Features' },
+              fix:      { label: 'type: fix',      color: 'D93F0B', heading: 'Bug Fixes' },
+              perf:     { label: 'type: perf',     color: 'F9D0C4', heading: 'Performance' },
+              refactor: { label: 'type: refactor', color: 'FBCA04', heading: 'Refactors' },
+              docs:     { label: 'type: docs',     color: '0075CA', heading: 'Documentation' },
+              test:     { label: 'type: test',     color: '1D76DB', heading: 'Tests' },
+              ci:       { label: 'type: ci',       color: 'BFD4F2', heading: 'CI/CD' },
+              chore:    { label: 'type: chore',    color: 'EDEDED', heading: 'Chores' },
+            };
+
+            const grouped = {};
+            const labelsToAdd = new Set(['release']);
+            let hasBreaking = false;
+
+            for (const commit of commits) {
+              const msg = commit.commit.message;
+              const firstLine = msg.split('\n')[0];
+              const sha = commit.sha.substring(0, 7);
+
+              const ccMatch = firstLine.match(/^([a-z]+)(?:\(.+?\))?(!)?\s*:\s*(.+)$/);
+              let type = 'other';
+              let description = firstLine;
+              let breaking = false;
+
+              if (ccMatch) {
+                type = ccMatch[1];
+                breaking = ccMatch[2] === '!';
+                description = ccMatch[3].trim();
+              }
+              if (msg.includes('BREAKING CHANGE') || msg.includes('BREAKING-CHANGE')) {
+                breaking = true;
+              }
+              if (breaking) hasBreaking = true;
+
+              const bucket = typeLabels[type] ? type : 'other';
+              if (!grouped[bucket]) grouped[bucket] = [];
+              grouped[bucket].push({ description, sha, breaking });
+              if (typeLabels[type]) labelsToAdd.add(type);
+            }
+
+            // --- Build PR body ---
+            const totalCommits = commits.length;
+            const featCount = (grouped.feat || []).length;
+            const fixCount = (grouped.fix || []).length;
+
+            let body = `## Production Release\n\n`;
+            body += `Merging \`${head}\` → \`${base}\` for production deployment.\n\n`;
+            body += `**Summary:** ${totalCommits} commit(s)`;
+            if (featCount) body += ` · ${featCount} feature(s)`;
+            if (fixCount) body += ` · ${fixCount} fix(es)`;
+            if (hasBreaking) body += ` · ⚠️ BREAKING CHANGES`;
+            body += `\n\n`;
+
+            body += `## Changes\n`;
+            const order = ['feat', 'fix', 'perf', 'refactor', 'docs', 'test', 'ci', 'chore'];
+            for (const type of order) {
+              if (!grouped[type]) continue;
+              body += `\n### ${typeLabels[type].heading}\n`;
+              for (const { description, sha, breaking } of grouped[type]) {
+                const flag = breaking ? ' **[BREAKING]**' : '';
+                body += `- ${description} (\`${sha}\`)${flag}\n`;
+              }
+            }
+            if (grouped.other) {
+              body += `\n### Other\n`;
+              for (const { description, sha } of grouped.other) {
+                body += `- ${description} (\`${sha}\`)\n`;
+              }
+            }
+
+            body += `\n## Release Checklist\n`;
+            body += `- [ ] CI checks passing on \`${head}\`\n`;
+            body += `- [ ] Smoke-tested on real phones (iOS Safari + Android Chrome)\n`;
+            body += `- [ ] Breaking changes communicated to stakeholders\n`;
+            body += `- [ ] Protocol version bumped if the wire format changed\n`;
+
+            const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            body += `\n---\n*Auto-generated from conventional commits. Last updated: ${now} UTC*\n`;
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              body,
+            });
+            core.info('Updated release PR description');
+
+            // --- Ensure labels exist ---
+            const labelNames = [...labelsToAdd].map(t => t === 'release' ? 'release' : typeLabels[t].label);
+            if (hasBreaking) labelNames.push('breaking change');
+
+            const { data: repoLabels } = await github.rest.issues.listLabelsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            const existingLabelNames = new Set(repoLabels.map(l => l.name));
+
+            const allLabelConfigs = {
+              release: '5319E7',
+              'breaking change': 'B60205',
+              ...Object.fromEntries(Object.values(typeLabels).map(v => [v.label, v.color])),
+            };
+
+            for (const labelName of labelNames) {
+              if (!existingLabelNames.has(labelName)) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: labelName,
+                  color: allLabelConfigs[labelName] || 'EDEDED',
+                });
+                core.info(`Created label: ${labelName}`);
+              }
+            }
+
+            if (labelNames.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: labelNames,
+              });
+              core.info(`Added labels: ${labelNames.join(', ')}`);
+            }
+
+            // --- Job summary ---
+            await core.summary
+              .addHeading(created ? 'Release PR created' : 'Release PR updated')
+              .addLink(`#${prNumber} — ${prTitle}`, prUrl)
+              .addRaw(`\n\n**${totalCommits}** commit(s) · **${featCount}** feature(s) · **${fixCount}** fix(es)`)
+              .addRaw(hasBreaking ? '\n\n⚠️ Contains breaking changes' : '')
+              .write();
