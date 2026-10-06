@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { minifySdp, pack, unpack } from "../src/qr/codec";
-import { INVITE_TTL_MS, checkAnswer, decodeAnswer, decodeOffer, encodeAnswer, encodeOffer, offerUrl } from "../src/qr/envelope";
+import { minifySdp, pack, unpack } from "@/qr/codec";
+import { INVITE_TTL_MS, checkAnswer, decodeAnswer, decodeOffer, encodeAnswer, encodeOffer, offerUrl } from "@/qr/envelope";
 
 const SDP = [
   "v=0",
