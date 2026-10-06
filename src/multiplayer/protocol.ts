@@ -246,7 +246,9 @@ const payloadChecks: { [K in MessageType]: Check } = {
     origin: isId,
     target: isId,
     kind: oneOf("offer", "answer"),
-    sdp: isStr,
+    // Relayed SDP is not minified (multiplayer must not depend on qr) and
+    // may list many candidates; the 64 KB message cap still applies.
+    sdp: (v) => typeof v === "string" && v.length > 0 && v.length <= 32768,
   }),
 }
 

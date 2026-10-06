@@ -811,7 +811,10 @@ export class GameNode {
         return this.onLeave(from)
       case "JOIN_REJECT":
       case "ROOM_CLOSED":
-        if (this.kind === "lobby" && from === this.lobby?.hostId)
+        if (
+          this.kind === "lobby" &&
+          from === (this.lobby?.hostId ?? this.expectedHostId)
+        )
           this.close((env.payload as { reason: string }).reason)
         return
       case "CLICK_REQUEST":
@@ -973,6 +976,11 @@ export class GameNode {
     )
     if (this.lobby.players.length !== before) {
       this.log("local", "GUEST_REMOVED", { peer: id })
+      // The broadcast no longer reaches the removed guest, so tell it directly
+      // (if the link still works) instead of letting it time out as "hostLeft".
+      // The link is left open so the message is not dropped by the close; the
+      // guest closes on receipt and its later messages are ignored as unknown.
+      this.send(id, "JOIN_REJECT", { reason: "removed" })
       this.broadcastLobby()
     }
   }
@@ -1553,7 +1561,13 @@ export class GameNode {
     const myJs = this.joinSeq(this.id)
     const open = this.t.openPeers()
     for (const m of this.members()) {
-      if (m.id === this.id || this.t.linkState(m.id) === "connected") continue
+      const link = this.t.linkState(m.id)
+      // `disconnected` may still recover on its own (WebRTC moves it to
+      // `failed` if not); replacing it early would drop a healthy peer
+      // (design 06 §6, W07). Stuck `connecting` links are retried after
+      // dialTimeoutMs below.
+      if (m.id === this.id || link === "connected" || link === "disconnected")
+        continue
       if (myJs >= m.joinSequence) continue // lower joinSequence initiates (W05)
       const started = this.dialing.get(m.id)
       if (started != null && now - started < this.T.dialTimeoutMs) continue
@@ -1693,6 +1707,14 @@ export class GameNode {
         }
       } else this.pump()
       return
+    }
+    if (this.election && this.leaderAlive()) {
+      // A pre-vote started while the leader looked dead; it is reachable again
+      // (same term, no new leader), so abandon the candidacy and unfreeze.
+      this.log("local", "ELECTION_ABANDONED", {
+        note: String(this.election.term),
+      })
+      this.election = null
     }
     if (!this.leaderAlive()) {
       const el = this.election
