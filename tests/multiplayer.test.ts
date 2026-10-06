@@ -9,6 +9,7 @@ import {
   inject,
   injectRaw,
   logHas,
+  SafetyMonitor,
   totalScore,
 } from "./helpers"
 import { createGame, createLobby, target, type Room } from "./sim"
@@ -817,5 +818,75 @@ describe("G. trust boundaries", () => {
     room.node("p2").click(target(room.node("p2")))
     room.run(300)
     expect(totalScore(room.node("p1"))).toBe(1)
+  })
+})
+
+describe("review regressions", () => {
+  it("carried GAME_STARTED keeps leadership term 0 so HOST_CHANGED applies", () => {
+    const room = createLobby(3)
+    room.net.filter = (from, _to, data) =>
+      !(from === "p1" && data.includes('"EVENT_COMMIT"'))
+    room.node("p1").startGame()
+    room.run(100)
+    room.net.filter = null
+    room.kill("p1")
+    expect(
+      room.runUntil(
+        () => room.live().every((n) => n.getView().state?.phase === "PLAYING"),
+        30000
+      )
+    ).toBe(true)
+    for (const n of room.live()) {
+      expect(n.getView().state!.leadership).toEqual({ hostId: "p2", term: 1 })
+    }
+    expect(logHas(room.node("p2"), "PROPOSE_INVALID")).toBe(false)
+  })
+
+  it("carried GAME_STARTED yields the same state as the original commit", () => {
+    const room = createLobby(5)
+    const mon = new SafetyMonitor()
+    // Only p5 receives the commit; p5's vote never reaches p2.
+    room.net.filter = (from, to, data) =>
+      !(
+        (from === "p1" && to !== "p5" && data.includes('"EVENT_COMMIT"')) ||
+        (from === "p5" && to === "p2" && data.includes('"ELECTION_ACK"'))
+      )
+    room.node("p1").startGame()
+    room.run(150)
+    room.kill("p1")
+    room.runUntil(() => {
+      mon.sample(room)
+      return room.live().every((n) => n.getView().state?.phase === "PLAYING")
+    }, 30000)
+    expect(mon.violations).toEqual([])
+  })
+
+  it("a follower recovers from a stale pre-vote once the leader is back", () => {
+    const room = createGame(3)
+    room.net.blackhole("p1", "p2")
+    room.run(6000) // p2 suspects p1 and starts a pre-vote; p3 denies it
+    room.net.connect("p1", "p2")
+    expect(room.runUntil(() => status(room, "p2") === "ACTIVE", 5000)).toBe(
+      true
+    )
+    expect(leaders(room)).toEqual(["p1"])
+    room.node("p2").click(target(room.node("p2")))
+    room.run(300)
+    expect(room.node("p3").getView().state!.scores.p2).toBe(1)
+  })
+
+  it("a guest removed by the Host is told it was removed", () => {
+    const room = createLobby(3)
+    // p3 can hear the Host but the Host no longer hears p3.
+    room.net.filter = (from, to) => !(from === "p3" && to === "p1")
+    room.run(20000)
+    expect(status(room, "p3")).toBe("CLOSED")
+    expect(room.node("p3").getView().closedReason).toBe("removed")
+    expect(
+      room
+        .node("p1")
+        .getView()
+        .lobby!.players.map((p) => p.id)
+    ).toEqual(["p1", "p2"])
   })
 })
