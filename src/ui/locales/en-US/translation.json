@@ -100,7 +100,6 @@
     "forgetGame": "Discard this game",
     "namePlaceholder": "e.g. Alex",
     "pasteInvite": "Paste invite link / code",
-    "resume": "You have an unfinished game in room {{roomId}}. Ask someone in the room to open “Invite a dropped player back” and scan their code.",
     "scanInvite": "Scan invite code",
     "scanRejoin": "Scan rejoin code"
   },

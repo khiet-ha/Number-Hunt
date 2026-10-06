@@ -100,7 +100,6 @@
     "forgetGame": "Bỏ trận này",
     "namePlaceholder": "Ví dụ: Lan",
     "pasteInvite": "Dán link / mã mời",
-    "resume": "Bạn đang có một trận dở trong phòng {{roomId}}. Nhờ một người trong phòng mở “Mời người chơi bị rớt vào lại” rồi quét mã của họ.",
     "scanInvite": "Quét mã mời",
     "scanRejoin": "Quét mã vào lại"
   },
