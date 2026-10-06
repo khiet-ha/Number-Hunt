@@ -11,7 +11,9 @@ import {
   INVITE_TTL_MS,
   offerUrl,
   type InviteKind,
+  QrError,
   type OpenInvite,
+  type QrErrorCode,
 } from "@/qr/envelope"
 import type { PeerLink } from "@/webrtc/peer"
 import { DEFAULT_ICE } from "@/webrtc/peer"
@@ -45,10 +47,36 @@ export interface InviteView {
   createdAt: number
 }
 
+/** Error codes surfaced to the UI, which owns their (translated) wording. */
+export type AppErrorCode =
+  | QrErrorCode
+  | "roomFull"
+  | "gameStarted"
+  | "notMember"
+  | "authFailed"
+  | "noPreviousSession"
+  | "connectTimeout"
+  | "unexpected"
+
+export interface AppMessage<C extends string> {
+  code: C
+  params?: Record<string, string>
+}
+
+export class AppError extends Error {
+  constructor(
+    readonly code: AppErrorCode,
+    readonly params?: Record<string, string>
+  ) {
+    super(code)
+    this.name = "AppError"
+  }
+}
+
 export interface AppState {
   screen: Screen
-  error: string | null
-  notice: string | null
+  error: AppMessage<AppErrorCode> | null
+  notice: AppMessage<"connecting"> | null
   busy: boolean
   invite: InviteView | null
 }
@@ -96,10 +124,13 @@ export class AppController {
   }
 
   private fail(err: unknown) {
-    this.set({
-      error: err instanceof Error ? err.message : String(err),
-      busy: false,
-    })
+    const error: AppMessage<AppErrorCode> =
+      err instanceof AppError
+        ? { code: err.code, params: err.params }
+        : err instanceof QrError
+          ? { code: err.code }
+          : { code: "unexpected", params: { detail: String(err) } }
+    this.set({ error, busy: false })
   }
 
   clearError() {
@@ -257,25 +288,25 @@ export class AppController {
         invite: entry?.info,
         now: Date.now(),
       })
-      if (err || !entry) throw new Error(err ?? "Mã mời không còn hiệu lực")
+      if (err || !entry) throw new AppError(err ?? "inviteUsed")
       if (entry.info.kind === "join") {
         const reject = node.addGuest({ id: a.p, name: a.m, secretHash: a.x })
         if (reject)
-          throw new Error(
-            reject === "full"
-              ? "Phòng đã đủ người"
-              : "Trận đã bắt đầu, không thể tham gia"
-          )
+          throw new AppError(reject === "full" ? "roomFull" : "gameStarted")
       } else {
         const member = node.getMember(a.p)
-        if (!member) throw new Error("Người này không thuộc trận đấu")
+        if (!member) throw new AppError("notMember")
         if ((await sha256Hex(a.x)) !== member.secretHash)
-          throw new Error("Không xác thực được người chơi")
+          throw new AppError("authFailed")
       }
       this.invites.delete(a.n)
       transport.bind(a.p, entry.link)
       await entry.link.acceptAnswer(a.s)
-      this.set({ invite: null, notice: `Đang kết nối ${a.m}…`, error: null })
+      this.set({
+        invite: null,
+        notice: { code: "connecting", params: { name: a.m } },
+        error: null,
+      })
       if (entry.info.kind === "join") this.maintainInvite()
       return true
     } catch (e) {
@@ -305,9 +336,7 @@ export class AppController {
           prev.roomId !== o.r ||
           !loadPersisted(this.opts.store, prev.roomId, prev.id)?.state
         ) {
-          throw new Error(
-            "Thiết bị/tab này không có phiên chơi trước của phòng " + o.r
-          )
+          throw new AppError("noPreviousSession", { roomId: o.r })
         }
         session = prev
       } else {
@@ -352,7 +381,7 @@ export class AppController {
       // Cancelled or superseded (backHome, a newer join): nothing to report.
       if (transport && this.transport !== transport) return
       if (e instanceof Error && e.message === "timeout")
-        this.fail(new Error("Không kết nối được. Hãy thử lại với mã mời mới."))
+        this.fail(new AppError("connectTimeout"))
       else this.fail(e)
     }
   }

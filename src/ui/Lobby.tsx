@@ -2,8 +2,8 @@ import type { AppController } from "@/app/controller"
 import type { GameConfig } from "@/game/types"
 import { LIMITS } from "@/game/types"
 import type { NodeView } from "@/multiplayer/node"
+import { tCode, useT } from "./i18n"
 import { InvitePanel } from "./InvitePanel"
-import { BLOCKER_TEXT } from "./text"
 
 export function ConfigForm({
   config,
@@ -14,13 +14,14 @@ export function ConfigForm({
   onChange: (c: GameConfig) => void
   disabled?: boolean
 }) {
+  const t = useT()
   const set = (patch: Partial<GameConfig>) => onChange({ ...config, ...patch })
   const num = (v: string, min: number, max: number) =>
     Math.max(min, Math.min(max, Math.round(Number(v) || min)))
   return (
     <fieldset class="config" disabled={disabled}>
       <label>
-        Số lượng số
+        {t("config.numberCount")}
         <input
           type="number"
           min={LIMITS.minNumbers}
@@ -38,7 +39,7 @@ export function ConfigForm({
         />
       </label>
       <label>
-        Số người tối đa
+        {t("config.playerLimit")}
         <input
           type="number"
           min={2}
@@ -52,7 +53,7 @@ export function ConfigForm({
         />
       </label>
       <label>
-        Chế độ
+        {t("config.mode")}
         <select
           value={config.mode}
           onChange={(e) =>
@@ -61,12 +62,12 @@ export function ConfigForm({
             })
           }
         >
-          <option value="TRADITIONAL">Truyền thống (bàn cố định)</option>
-          <option value="RANDOM">Ngẫu nhiên (xáo bàn sau mỗi số)</option>
+          <option value="TRADITIONAL">{t("config.modeTraditional")}</option>
+          <option value="RANDOM">{t("config.modeRandom")}</option>
         </select>
       </label>
       <label>
-        Dãy số
+        {t("config.numberMode")}
         <select
           value={config.numberMode}
           onChange={(e) =>
@@ -76,14 +77,14 @@ export function ConfigForm({
             })
           }
         >
-          <option value="SEQUENTIAL">Liên tiếp 1, 2, 3…</option>
-          <option value="FIXED_STEP">Bước cố định</option>
-          <option value="RANDOM_STEP">Bước ngẫu nhiên</option>
+          <option value="SEQUENTIAL">{t("config.sequential")}</option>
+          <option value="FIXED_STEP">{t("config.fixedStep")}</option>
+          <option value="RANDOM_STEP">{t("config.randomStep")}</option>
         </select>
       </label>
       {config.numberMode === "FIXED_STEP" && (
         <label>
-          Bước
+          {t("config.step")}
           <input
             type="number"
             min={1}
@@ -103,7 +104,7 @@ export function ConfigForm({
       )}
       {config.numberMode === "RANDOM_STEP" && (
         <label>
-          Các bước có thể (phân cách bằng dấu phẩy)
+          {t("config.randomSteps")}
           <input
             value={config.randomSteps.join(", ")}
             onChange={(e) => {
@@ -118,7 +119,7 @@ export function ConfigForm({
         </label>
       )}
       <label>
-        Cỡ chữ
+        {t("config.sizeMode")}
         <select
           value={config.sizeMode}
           onChange={(e) =>
@@ -128,9 +129,9 @@ export function ConfigForm({
             })
           }
         >
-          <option value="SMALL">Nhỏ</option>
-          <option value="LARGE">Lớn</option>
-          <option value="RANDOM">Ngẫu nhiên</option>
+          <option value="SMALL">{t("config.sizeSmall")}</option>
+          <option value="LARGE">{t("config.sizeLarge")}</option>
+          <option value="RANDOM">{t("config.sizeRandom")}</option>
         </select>
       </label>
     </fieldset>
@@ -138,12 +139,13 @@ export function ConfigForm({
 }
 
 export function Lobby({ c, v }: { c: AppController; v: NodeView }) {
+  const t = useT()
   const lobby = v.lobby
   const node = c.node!
   if (!lobby)
     return (
       <section class="card">
-        <p>Đang vào phòng…</p>
+        <p>{t("lobby.entering")}</p>
       </section>
     )
   const isHost = lobby.hostId === v.selfId
@@ -153,7 +155,7 @@ export function Lobby({ c, v }: { c: AppController; v: NodeView }) {
     <div class="lobby">
       <section class="card">
         <h2>
-          Phòng{" "}
+          {t("lobby.room")}{" "}
           <span class="room-id" data-testid="room-id">
             {v.roomId}
           </span>
@@ -167,14 +169,14 @@ export function Lobby({ c, v }: { c: AppController; v: NodeView }) {
                 <span class="dot" style={{ background: p.color }} />
                 <span class="name">
                   {p.name}
-                  {p.id === v.selfId && " (bạn)"}
+                  {p.id === v.selfId && ` ${t("lobby.you")}`}
                   {p.id === lobby.hostId && " 👑"}
                 </span>
                 <span class={`tag ${linked ? "ok" : "warn"}`}>
-                  {linked ? "kết nối" : "đang nối…"}
+                  {linked ? t("lobby.linked") : t("lobby.linking")}
                 </span>
                 <span class={`tag ${p.ready ? "ok" : ""}`}>
-                  {p.ready ? "Sẵn sàng" : "Chưa sẵn sàng"}
+                  {p.ready ? t("lobby.ready") : t("lobby.notReady")}
                 </span>
               </li>
             )
@@ -186,7 +188,7 @@ export function Lobby({ c, v }: { c: AppController; v: NodeView }) {
             class={me.ready ? "secondary" : ""}
             onClick={() => node.setReady(!me.ready)}
           >
-            {me.ready ? "Huỷ sẵn sàng" : "Sẵn sàng"}
+            {me.ready ? t("lobby.unsetReady") : t("lobby.setReady")}
           </button>
         )}
         {isHost && (
@@ -196,21 +198,21 @@ export function Lobby({ c, v }: { c: AppController; v: NodeView }) {
               disabled={v.startBlockers.length > 0}
               onClick={() => node.startGame()}
             >
-              Bắt đầu
+              {t("lobby.start")}
             </button>
             {v.startBlockers.length > 0 && (
               <p class="muted">
-                {v.startBlockers.map((b) => BLOCKER_TEXT[b] ?? b).join(" · ")}
+                {v.startBlockers.map((b) => tCode("blocker", b)).join(" · ")}
               </p>
             )}
           </>
         )}
       </section>
       {isHost && node.canAcceptGuests() && (
-        <InvitePanel c={c} title="Mời người chơi" />
+        <InvitePanel c={c} title={t("invite.titleJoin")} />
       )}
       <section class="card">
-        <h3>Luật chơi</h3>
+        <h3>{t("lobby.rules")}</h3>
         <ConfigForm
           config={lobby.config}
           disabled={!isHost}

@@ -442,3 +442,23 @@ summary {
   margin: 4px 0 0;
   white-space: pre-wrap;
 }
+
+.lang {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 4px;
+}
+.lang select {
+  width: auto;
+  margin: 0;
+  padding: 0.25em 0.5em;
+  font-size: 0.85rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

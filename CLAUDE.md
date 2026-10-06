@@ -80,10 +80,15 @@ import type { GameState } from "@/game/types"
 import { QrCode } from "./QrCode"
 ```
 
-## UI Text
+## i18n Conventions
 
-- Ngôn ngữ hiển thị: tiếng Việt **có dấu đầy đủ**.
-- Chuỗi trạng thái/lỗi dùng lại phải nằm trong `src/ui/text.ts` (map theo mã lý do), không rải trong component. (Chưa có i18n; nếu thêm, dùng key sort alphabet và không `defaultValue`.)
+- `i18next` core + hook `useT()` trong `src/ui/i18n.ts` (không dùng react-i18next). Ngôn ngữ: lựa chọn đã lưu (`localStorage nh:lang`) → ngôn ngữ trình duyệt → `vi-VN`.
+- Locale: `src/ui/locales/{vi-VN,en-US,lo-LA}/translation.json`. **vi-VN là locale tham chiếu**: `t()` được gõ kiểu theo nó (`src/ui/i18next.d.ts`), sai key là `pnpm typecheck` báo lỗi.
+- **vi-VN phải có dấu đầy đủ** (ví dụ "Khách hàng", không phải "Khach hang").
+- **Key JSON sắp xếp alphabet đệ quy** ở mọi cấp, cả 3 ngôn ngữ (test `tests/i18n.test.ts` kiểm tra cùng bộ key, cùng placeholder, đã sort). Sau khi thêm key: `python3 -c "import json,sys; f=sys.argv[1]; json.dump(json.load(open(f)), open(f,'w'), ensure_ascii=False, indent=2, sort_keys=True)" <file>`.
+- **Không hard-code chuỗi hiển thị**, không dùng `defaultValue`. Thiếu key thì thêm vào cả 3 locale rồi mới dùng.
+- Lớp dưới (`qr`, `app`, `multiplayer`) chỉ trả **mã** (`QrError.code`, `AppError.code`, reason của Host); UI dịch bằng `t("errors.<code>")` hoặc `tCode(prefix, code)` cho mã đến lúc runtime.
+- Overlay debug (`?debug`) dành cho dev, không cần dịch.
 
 ## Key Commands
 

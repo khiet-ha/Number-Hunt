@@ -1,6 +1,8 @@
 import jsQR from "jsqr"
 import { useEffect, useRef, useState } from "preact/hooks"
 
+import { useT } from "./i18n"
+
 interface BarcodeDetectorLike {
   detect(src: CanvasImageSource): Promise<Array<{ rawValue: string }>>
 }
@@ -13,11 +15,14 @@ export function Scanner({
   onResult: (text: string) => void
   onClose: () => void
 }) {
+  const t = useT()
   const video = useRef<HTMLVideoElement>(null)
   // Latest callback without restarting the camera when the parent re-renders.
   const onResultRef = useRef(onResult)
   onResultRef.current = onResult
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<"noPermission" | "unsupported" | null>(
+    null
+  )
 
   useEffect(() => {
     let stream: MediaStream | null = null
@@ -81,13 +86,8 @@ export function Scanner({
         }
         raf = requestAnimationFrame(() => void scan())
       })
-      .catch(() =>
-        setError(
-          "Không mở được camera. Hãy cấp quyền camera hoặc dán mã bằng tay."
-        )
-      )
-    if (!navigator.mediaDevices)
-      setError("Trình duyệt không hỗ trợ camera (cần HTTPS).")
+      .catch(() => setError("noPermission"))
+    if (!navigator.mediaDevices) setError("unsupported")
 
     return () => {
       stopped = true
@@ -99,12 +99,12 @@ export function Scanner({
   return (
     <div class="scanner">
       {error ? (
-        <p class="error">{error}</p>
+        <p class="error">{t(`scanner.${error}`)}</p>
       ) : (
         <video ref={video} playsInline muted />
       )}
       <button class="secondary" onClick={onClose}>
-        Đóng camera
+        {t("scanner.close")}
       </button>
     </div>
   )

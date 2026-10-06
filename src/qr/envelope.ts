@@ -69,6 +69,27 @@ export function offerUrl(base: string, packed: string): string {
   return `${base.split("#")[0]}#j=${packed}`
 }
 
+/** Why a QR payload was rejected; the UI maps each code to a translated message. */
+export type QrErrorCode =
+  | "offerInvalid"
+  | "offerVersion"
+  | "answerNotPlayer"
+  | "answerInvalid"
+  | "answerVersion"
+  | "nameInvalid"
+  | "wrongRoom"
+  | "wrongHost"
+  | "inviteUsed"
+  | "inviteExpired"
+  | "selfJoin"
+
+export class QrError extends Error {
+  constructor(readonly code: QrErrorCode) {
+    super(code)
+    this.name = "QrError"
+  }
+}
+
 /** Accepts a full invite URL, a "#j=..." fragment, or the bare packed string. */
 export async function decodeOffer(input: string): Promise<OfferEnvelope> {
   const m = input.trim().match(/[#&]j=([A-Za-z0-9_-]+)/)
@@ -77,9 +98,9 @@ export async function decodeOffer(input: string): Promise<OfferEnvelope> {
   try {
     o = JSON.parse(await unpack(packed))
   } catch {
-    throw new Error("Mã mời không hợp lệ")
+    throw new QrError("offerInvalid")
   }
-  if (o.v !== QR_VERSION) throw new Error("Phiên bản mã mời không hỗ trợ")
+  if (o.v !== QR_VERSION) throw new QrError("offerVersion")
   if (
     o.t !== "o" ||
     !isStr(o.r, 16) ||
@@ -87,22 +108,21 @@ export async function decodeOffer(input: string): Promise<OfferEnvelope> {
     !isStr(o.n, 32) ||
     !isStr(o.s)
   )
-    throw new Error("Mã mời không hợp lệ")
-  if (o.k !== "join" && o.k !== "rejoin") throw new Error("Mã mời không hợp lệ")
+    throw new QrError("offerInvalid")
+  if (o.k !== "join" && o.k !== "rejoin") throw new QrError("offerInvalid")
   return o as unknown as OfferEnvelope
 }
 
 export async function decodeAnswer(input: string): Promise<AnswerEnvelope> {
   const s = input.trim()
-  if (!s.startsWith(ANSWER_PREFIX))
-    throw new Error("Đây không phải mã trả lời của người chơi")
+  if (!s.startsWith(ANSWER_PREFIX)) throw new QrError("answerNotPlayer")
   let a: Record<string, unknown>
   try {
     a = JSON.parse(await unpack(s.slice(ANSWER_PREFIX.length)))
   } catch {
-    throw new Error("Mã trả lời không hợp lệ")
+    throw new QrError("answerInvalid")
   }
-  if (a.v !== QR_VERSION) throw new Error("Phiên bản mã trả lời không hỗ trợ")
+  if (a.v !== QR_VERSION) throw new QrError("answerVersion")
   if (
     a.t !== "a" ||
     !isStr(a.r, 16) ||
@@ -112,9 +132,9 @@ export async function decodeAnswer(input: string): Promise<AnswerEnvelope> {
     !isStr(a.x, 128) ||
     !isStr(a.s)
   )
-    throw new Error("Mã trả lời không hợp lệ")
+    throw new QrError("answerInvalid")
   if (typeof a.m !== "string" || a.m.length > LIMITS.maxNameLength * 2)
-    throw new Error("Tên người chơi không hợp lệ")
+    throw new QrError("nameInvalid")
   return a as unknown as AnswerEnvelope
 }
 
@@ -133,12 +153,11 @@ export function checkAnswer(
     invite: OpenInvite | undefined
     now: number
   }
-): string | null {
-  if (a.r !== ctx.roomId) return "Mã trả lời thuộc phòng khác"
-  if (a.h !== ctx.selfId) return "Mã trả lời dành cho người khác"
-  if (!ctx.invite || ctx.invite.nonce !== a.n)
-    return "Mã mời đã được dùng hoặc không còn hiệu lực"
-  if (ctx.now - ctx.invite.createdAt > INVITE_TTL_MS) return "Mã mời đã hết hạn"
-  if (a.p === ctx.selfId) return "Không thể tự tham gia"
+): QrErrorCode | null {
+  if (a.r !== ctx.roomId) return "wrongRoom"
+  if (a.h !== ctx.selfId) return "wrongHost"
+  if (!ctx.invite || ctx.invite.nonce !== a.n) return "inviteUsed"
+  if (ctx.now - ctx.invite.createdAt > INVITE_TTL_MS) return "inviteExpired"
+  if (a.p === ctx.selfId) return "selfJoin"
   return null
 }

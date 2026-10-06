@@ -12,6 +12,8 @@ Game "tìm số" nhiều người chơi (2–8) chạy trên trình duyệt đi�
 3. Host bấm **Quét mã trả lời**. Lặp lại cho từng người.
 4. Mọi người **Sẵn sàng** → Host **Bắt đầu**. Ai chạm đúng số cần tìm trước được 1 điểm.
 
+Giao diện: Tiếng Việt, English, ພາສາລາວ (tự chọn theo trình duyệt, đổi được ở góc trên).
+
 Rớt mạng/reload giữa trận: một người trong phòng mở menu ☰ → **Mời người chơi bị rớt vào lại**.
 
 ## Phát triển

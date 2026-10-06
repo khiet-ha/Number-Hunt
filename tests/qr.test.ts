@@ -105,19 +105,19 @@ describe("F. QR bootstrap", () => {
     const invite = { nonce: "nonce1", kind: "join" as const, createdAt: 0 }
     expect(
       checkAnswer(a, { roomId: "ABC123", selfId: "p_host", invite, now: 1 })
-    ).toMatch(/phòng khác/)
+    ).toBe("wrongRoom")
     expect(
       checkAnswer(
         { ...a, r: "ABC123", h: "p_other" },
         { roomId: "ABC123", selfId: "p_host", invite, now: 1 }
       )
-    ).toMatch(/người khác/)
+    ).toBe("wrongHost")
     expect(
       checkAnswer(
         { ...a, r: "ABC123", n: "zzz" },
         { roomId: "ABC123", selfId: "p_host", invite, now: 1 }
       )
-    ).toMatch(/hiệu lực/)
+    ).toBe("inviteUsed")
   })
 
   it("W04 expired invite rejected (Host clock)", async () => {
@@ -140,7 +140,7 @@ describe("F. QR bootstrap", () => {
         invite,
         now: INVITE_TTL_MS + 1,
       })
-    ).toMatch(/hết hạn/)
+    ).toBe("inviteExpired")
   })
 
   it("garbage is rejected safely", async () => {
@@ -151,6 +151,6 @@ describe("F. QR bootstrap", () => {
         await (async () =>
           "NH2:" + (await pack(JSON.stringify({ v: 1, t: "a" }))))()
       )
-    ).rejects.toThrow(/Phiên bản/)
+    ).rejects.toMatchObject({ code: "answerVersion" })
   })
 })
