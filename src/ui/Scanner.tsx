@@ -8,6 +8,9 @@ interface BarcodeDetectorLike {
 /** Camera QR scanner. Uses the native BarcodeDetector when present, else jsQR. */
 export function Scanner({ onResult, onClose }: { onResult: (text: string) => void; onClose: () => void }) {
   const video = useRef<HTMLVideoElement>(null);
+  // Latest callback without restarting the camera when the parent re-renders.
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,7 +48,7 @@ export function Scanner({ onResult, onClose }: { onResult: (text: string) => voi
           }
           if (text && !stopped) {
             stopped = true;
-            onResult(text);
+            onResultRef.current(text);
             return;
           }
         } catch {
