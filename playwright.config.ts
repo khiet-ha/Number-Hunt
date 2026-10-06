@@ -1,7 +1,7 @@
-import { defineConfig } from "@playwright/test";
-import { existsSync } from "node:fs";
+import { defineConfig } from "@playwright/test"
+import { existsSync } from "node:fs"
 
-const localChromium = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const localChromium = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 export default defineConfig({
   testDir: "e2e",
@@ -14,7 +14,11 @@ export default defineConfig({
     launchOptions: {
       executablePath: existsSync(localChromium) ? localChromium : undefined,
       // Expose raw host candidates instead of mDNS names so contexts on one machine can connect.
-      args: ["--disable-features=WebRtcHideLocalIpsWithMdns", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
+      args: [
+        "--disable-features=WebRtcHideLocalIpsWithMdns",
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
+      ],
     },
   },
   webServer: {
@@ -23,4 +27,4 @@ export default defineConfig({
     reuseExistingServer: true,
     timeout: 120_000,
   },
-});
+})
