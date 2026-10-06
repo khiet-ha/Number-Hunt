@@ -1,0 +1,46 @@
+name: Setup Node & pnpm
+description: >-
+  Cài pnpm (version lấy từ field `packageManager` của package.json) và Node
+  (version lấy từ .nvmrc), bật cache store của pnpm, rồi install với lockfile khoá cứng.
+  Một nguồn sự thật duy nhất cho toolchain — CI và local luôn khớp nhau.
+
+inputs:
+  install:
+    description: 'Chạy `pnpm install --frozen-lockfile` sau khi setup'
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    # Không truyền `version:` — action đọc `packageManager: pnpm@x.y.z` trong package.json.
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
+    # Hai step Node gần như trùng nhau, khác duy nhất ở `cache`. Lý do phải tách:
+    # `cache: pnpm` làm setup-node thêm một post-step lưu cache từ đường dẫn pnpm store.
+    # Job nào không install (ví dụ job audit) thì store chưa hề được tạo, và post-step đó
+    # in ra "Error: Path Validation Error: Path(s) specified in the action for caching
+    # do(es) not exist" — job vẫn xanh nhưng log có chữ Error, lâu dần thành quen mắt
+    # rồi bỏ qua cả Error thật.
+    #
+    # Không gộp thành `cache: ${{ inputs.install == 'true' && 'pnpm' || '' }}` vì cách đó
+    # dựa vào việc setup-node coi chuỗi rỗng là "không cache" — đúng theo code hiện tại
+    # nhưng là hành vi không có trong tài liệu. Tách step thì không cần giả định gì.
+    - name: Setup Node (kèm cache pnpm)
+      if: inputs.install == 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - name: Setup Node (không cache)
+      if: inputs.install != 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+
+    - name: Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile
