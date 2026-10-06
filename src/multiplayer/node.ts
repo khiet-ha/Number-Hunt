@@ -1561,7 +1561,13 @@ export class GameNode {
     const myJs = this.joinSeq(this.id)
     const open = this.t.openPeers()
     for (const m of this.members()) {
-      if (m.id === this.id || this.t.linkState(m.id) === "connected") continue
+      const link = this.t.linkState(m.id)
+      // `disconnected` may still recover on its own (WebRTC moves it to
+      // `failed` if not); replacing it early would drop a healthy peer
+      // (design 06 §6, W07). Stuck `connecting` links are retried after
+      // dialTimeoutMs below.
+      if (m.id === this.id || link === "connected" || link === "disconnected")
+        continue
       if (myJs >= m.joinSequence) continue // lower joinSequence initiates (W05)
       const started = this.dialing.get(m.id)
       if (started != null && now - started < this.T.dialTimeoutMs) continue
