@@ -23,4 +23,4 @@ Hợp đồng implement. Giữ nguyên tinh thần bản gốc, cập nhật the
 
 ## Quy trình khi sửa multiplayer
 
-Đọc 01–05 → viết/đổi test trong simulator trước (`tests/multiplayer.test.ts`) → chạy `npm test` và `STRESS_SEEDS=100 npx vitest run tests/stress.test.ts` (SafetyMonitor phải sạch) → `npm run test:e2e` nếu đụng WebRTC/QR/UI → cập nhật `09-test-matrix.md`.
+Đọc 01–05 → viết/đổi test trong simulator trước (`tests/multiplayer.test.ts`) → chạy `pnpm test` và `STRESS_SEEDS=100 pnpm exec vitest run tests/stress.test.ts` (SafetyMonitor phải sạch) → `pnpm test:e2e` nếu đụng WebRTC/QR/UI → cập nhật `09-test-matrix.md`.

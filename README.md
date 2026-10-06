@@ -17,13 +17,15 @@ Rớt mạng/reload giữa trận: một người trong phòng mở menu ☰ →
 ## Phát triển
 
 ```bash
-npm install
-npm run dev        # http://localhost:5173  (?debug: overlay giao thức, ?nostun: chỉ LAN)
-npm test           # engine + simulator mạng + stress
-npm run test:e2e   # Playwright, WebRTC thật giữa nhiều browser context
-npm run build      # dist/ cho GitHub Pages
+pnpm install       # pnpm theo `packageManager`, Node theo `.nvmrc`
+pnpm dev           # http://localhost:5173  (?debug: overlay giao thức, ?nostun: chỉ LAN)
+pnpm test          # engine + simulator mạng + stress
+pnpm test:e2e      # Playwright, WebRTC thật giữa nhiều browser context
+pnpm lint          # ESLint (gồm luật ranh giới layer)
+pnpm format        # Prettier
+pnpm build         # dist/ cho GitHub Pages
 ```
 
-Deploy: bật GitHub Pages với Source = **GitHub Actions**; workflow `.github/workflows/deploy.yml` test rồi publish khi push lên `main`.
+Quy trình: làm trên nhánh `feat/ fix/ chore/ …` từ `develop` (xem `CLAUDE.md`); push là workflow tự mở PR. Merge vào `develop` tạo bản beta, `develop → master` (workflow **Release PR**) tạo bản stable và deploy GitHub Pages (bật Pages với Source = **GitHub Actions**).
 
 Giới hạn MVP: không TURN (nên chơi chung Wi‑Fi), phòng 2 người dừng khi một người rớt, Host lobby rời trước khi bắt đầu thì phòng đóng. Xem `docs/design/00-review.md` §E.

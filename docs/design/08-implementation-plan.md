@@ -44,15 +44,16 @@ Gộp so với gợi ý gốc: `host.ts/client.ts/event-log.ts/quorum.ts/electio
 ## Chạy
 
 ```bash
-npm install
-npm run dev          # http://localhost:5173 (thêm ?debug, ?nostun)
-npm test             # unit + simulator + stress (Vitest)
-npm run test:e2e     # Playwright: WebRTC thật giữa nhiều context
-npm run build        # dist/ cho GitHub Pages
-STRESS_SEEDS=300 npx vitest run tests/stress.test.ts   # stress mở rộng
+pnpm install
+pnpm dev             # http://localhost:5173 (thêm ?debug, ?nostun)
+pnpm test            # unit + simulator + stress (Vitest)
+pnpm test:e2e        # Playwright: WebRTC thật giữa nhiều context
+pnpm lint            # gồm luật ranh giới layer (no-restricted-imports)
+pnpm build           # dist/ cho GitHub Pages
+STRESS_SEEDS=300 pnpm exec vitest run tests/stress.test.ts   # stress mở rộng
 ```
 
-Deploy: `.github/workflows/deploy.yml` build + test rồi publish `dist/` lên GitHub Pages (bật Pages → Source: GitHub Actions).
+CI/CD: `.github/workflows/ci.yml` (commitlint, typecheck/lint/format, test + coverage, e2e, build, audit) chạy trên PR; `release.yml` dùng semantic-release (master = stable + deploy GitHub Pages, develop = beta).
 
 ## Definition of done
 
