@@ -11,6 +11,8 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     baseURL: "http://localhost:4173/",
+    // The app picks its language from the browser; the specs assert Vietnamese text.
+    locale: "vi-VN",
     launchOptions: {
       executablePath: existsSync(localChromium) ? localChromium : undefined,
       // Expose raw host candidates instead of mDNS names so contexts on one machine can connect.
