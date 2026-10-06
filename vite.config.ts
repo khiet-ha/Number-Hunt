@@ -7,5 +7,13 @@ export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   esbuild: { jsx: "automatic", jsxImportSource: "preact" },
   build: { target: "es2022", sourcemap: true },
-  test: { include: ["tests/**/*.test.ts"], environment: "node" },
+  test: {
+    include: ["tests/**/*.test.ts"],
+    environment: "node",
+    coverage: {
+      provider: "v8",
+      include: ["src/**"],
+      reporter: ["text-summary", "lcov"],
+    },
+  },
 })
