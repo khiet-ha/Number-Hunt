@@ -151,7 +151,17 @@ jobs:
       # Không có @semantic-release/npm nên package.json trong tag vẫn mang
       # version cũ. Stamp lại để artifact tự mô tả đúng nó là bản nào.
       - name: Stamp version into package.json
-        run: npm pkg set version="${{ needs.release.outputs.version }}"
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        # pnpm là package manager duy nhất của repo; sửa JSON bằng Node để
+        # không phụ thuộc npm CLI.
+        run: |
+          node -e '
+            const fs = require("node:fs")
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"))
+            pkg.version = process.env.VERSION
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n")
+          '
 
       - name: Build
         run: pnpm build
