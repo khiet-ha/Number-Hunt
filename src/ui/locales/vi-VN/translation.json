@@ -28,6 +28,7 @@
   },
   "common": {
     "cancel": "Huỷ",
+    "close": "Đóng",
     "copied": "Đã sao chép",
     "join": "Tham gia",
     "language": "Ngôn ngữ",
@@ -180,10 +181,13 @@
     "title": "Trận đang dở trong phòng {{roomId}}"
   },
   "scanner": {
-    "close": "Đóng camera",
     "hint": "Đưa mã QR vào giữa khung hình.",
     "noPermission": "Không mở được camera. Hãy cấp quyền camera hoặc dán mã bằng tay.",
-    "unsupported": "Trình duyệt không hỗ trợ camera (cần HTTPS)."
+    "paste": "Dán mã thay vì quét",
+    "pasteHint": "Dán mã bạn nhận được vào ô bên dưới.",
+    "title": "Quét mã QR",
+    "unsupported": "Trình duyệt không hỗ trợ camera (cần HTTPS).",
+    "useCamera": "Dùng camera"
   },
   "status": {
     "ACTIVE": "Đã kết nối",
