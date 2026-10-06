@@ -170,7 +170,7 @@ function randomId(random: () => number, len = 10): string {
 }
 
 export function sanitizeName(name: string): string {
-  return name.replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, LIMITS.maxNameLength) || "Player";
+  return name.replace(/[\p{Cc}<>]/gu, "").trim().slice(0, LIMITS.maxNameLength) || "Player";
 }
 
 export class GameNode {
