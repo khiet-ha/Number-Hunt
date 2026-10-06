@@ -1,5 +1,5 @@
-import type { PlayerId } from "../game/types";
-import { LIMITS } from "../game/types";
+import type { PlayerId } from "@/game/types";
+import { LIMITS } from "@/game/types";
 import { minifySdp, pack, unpack } from "./codec";
 
 /**
