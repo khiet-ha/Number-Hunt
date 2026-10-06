@@ -2,12 +2,17 @@ import jsQR from "jsqr"
 import { useEffect, useRef, useState } from "preact/hooks"
 
 import { useT } from "./i18n"
+import { Sheet } from "./Sheet"
 
 interface BarcodeDetectorLike {
   detect(src: CanvasImageSource): Promise<Array<{ rawValue: string }>>
 }
 
-/** Camera QR scanner. Uses the native BarcodeDetector when present, else jsQR. */
+/**
+ * QR scanner shown as a push-up sheet. Uses the native BarcodeDetector when
+ * present, else jsQR. Without a usable camera (or on request) the same sheet
+ * takes the code pasted as text, so no flow depends on having a camera.
+ */
 export function Scanner({
   onResult,
   onClose,
@@ -23,8 +28,12 @@ export function Scanner({
   const [error, setError] = useState<"noPermission" | "unsupported" | null>(
     null
   )
+  const [mode, setMode] = useState<"camera" | "paste">("camera")
+  const [paste, setPaste] = useState("")
 
   useEffect(() => {
+    // Leaving camera mode releases the camera right away.
+    if (mode !== "camera") return
     let stream: MediaStream | null = null
     let raf = 0
     let stopped = false
@@ -86,31 +95,66 @@ export function Scanner({
         }
         raf = requestAnimationFrame(() => void scan())
       })
-      .catch(() => setError("noPermission"))
-    if (!navigator.mediaDevices) setError("unsupported")
+      .catch(() => {
+        setError("noPermission")
+        setMode("paste")
+      })
+    if (!navigator.mediaDevices) {
+      setError("unsupported")
+      setMode("paste")
+    }
 
     return () => {
       stopped = true
       cancelAnimationFrame(raf)
       stream?.getTracks().forEach((t) => t.stop())
     }
-  }, [])
+  }, [mode])
 
   return (
-    <div class="scanner">
-      {error ? (
-        <p class="error">{t(`scanner.${error}`)}</p>
-      ) : (
-        <>
-          <div class="scan-frame">
-            <video ref={video} playsInline muted />
-          </div>
-          <p class="muted">{t("scanner.hint")}</p>
-        </>
-      )}
-      <button class="secondary" onClick={onClose}>
-        {t("scanner.close")}
-      </button>
-    </div>
+    <Sheet title={t("scanner.title")} onClose={onClose} testId="scanner-sheet">
+      <div class="scanner">
+        {mode === "camera" ? (
+          <>
+            <div class="scan-frame">
+              <video ref={video} playsInline muted />
+            </div>
+            <p class="muted">{t("scanner.hint")}</p>
+            <button
+              class="link"
+              data-testid="scanner-paste-toggle"
+              onClick={() => setMode("paste")}
+            >
+              {t("scanner.paste")}
+            </button>
+          </>
+        ) : (
+          <>
+            {error && <p class="error">{t(`scanner.${error}`)}</p>}
+            <p class="muted">{t("scanner.pasteHint")}</p>
+            <textarea
+              data-testid="scanner-paste-input"
+              rows={4}
+              value={paste}
+              autoFocus
+              onInput={(e) => setPaste((e.target as HTMLTextAreaElement).value)}
+              placeholder="NH2:…"
+            />
+            <button
+              data-testid="scanner-paste-submit"
+              disabled={!paste.trim()}
+              onClick={() => onResult(paste.trim())}
+            >
+              {t("invite.submit")}
+            </button>
+            {!error && (
+              <button class="link" onClick={() => setMode("camera")}>
+                {t("scanner.useCamera")}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </Sheet>
   )
 }
