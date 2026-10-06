@@ -1,7 +1,7 @@
 import type { GameConfig } from "@/game/types"
 import { DEFAULT_CONFIG } from "@/game/types"
 import { EventLogger, type KeyValueStore } from "@/multiplayer/env"
-import { GameNode, loadPersisted, sanitizeName } from "@/multiplayer/node"
+import { clearPersisted, GameNode, sanitizeName } from "@/multiplayer/node"
 import {
   checkAnswer,
   decodeAnswer,
@@ -28,16 +28,43 @@ import {
   sha256Hex,
   type Session,
 } from "./identity"
+import {
+  clearResume,
+  findResumable,
+  getTabId,
+  RESUME_BEAT_MS,
+  touchResume,
+  type ResumeInfo,
+} from "./resume"
 
 /**
  * Wires QR bootstrap ↔ WebRTC transport ↔ GameNode for the UI.
  * Holds no game rules; everything replicated lives in GameNode.
  */
 
+/** What a scanned/pasted invite says, decoded before the player commits. */
+export interface OfferPeek {
+  roomId: string
+  kind: InviteKind
+  inviterId: string
+}
+
 export type Screen =
   | { name: "home" }
-  | { name: "join"; offerText: string }
-  | { name: "answer"; answerText: string; roomId: string; rejoin: boolean }
+  | {
+      name: "join"
+      offerText: string
+      /** null while decoding or when the invite is invalid (see offerError). */
+      offer: OfferPeek | null
+      offerError: AppErrorCode | null
+    }
+  | {
+      name: "answer"
+      answerText: string
+      roomId: string
+      rejoin: boolean
+      startedAt: number
+    }
   | { name: "room" }
 
 export interface InviteView {
@@ -55,6 +82,7 @@ export type AppErrorCode =
   | "notMember"
   | "authFailed"
   | "noPreviousSession"
+  | "openElsewhere"
   | "connectTimeout"
   | "unexpected"
 
@@ -76,13 +104,16 @@ export class AppError extends Error {
 export interface AppState {
   screen: Screen
   error: AppMessage<AppErrorCode> | null
-  notice: AppMessage<"connecting"> | null
+  notice: AppMessage<"connecting" | "joined"> | null
   busy: boolean
   invite: InviteView | null
 }
 
 export interface AppOptions {
+  /** Per tab (sessionStorage): which session this tab is playing. */
   store: KeyValueStore
+  /** Per browser (localStorage): replicated game state, to resume later. */
+  persist: KeyValueStore
   baseUrl: string
   iceServers?: RTCIceServer[]
   debug?: boolean
@@ -108,8 +139,11 @@ export class AppController {
   private listeners = new Set<() => void>()
   private unsubNode: (() => void) | null = null
   private inviteTimer: ReturnType<typeof setInterval> | null = null
+  private resumeTimer: ReturnType<typeof setInterval> | null = null
+  private readonly tabId: string
 
   constructor(private readonly opts: AppOptions) {
+    this.tabId = getTabId(opts.store)
     this.session = loadSession(opts.store)
   }
 
@@ -137,17 +171,44 @@ export class AppController {
     this.set({ error: null, notice: null })
   }
 
-  /** A previous in-game session on this tab that can be rejoined. */
-  resumable(): Session | null {
-    const s = this.session
-    if (!s || this.node) return null
-    return loadPersisted(this.opts.store, s.roomId, s.id)?.state ? s : null
+  /**
+   * A started game this device can rejoin: the one of this tab (after a
+   * reload) or the last one saved by a tab/app that has since been closed.
+   */
+  resumable(): ResumeInfo | null {
+    if (this.node) return null
+    return findResumable(
+      { tab: this.opts.store, persist: this.opts.persist, now: Date.now() },
+      this.tabId,
+      (s) => clearPersisted(this.opts.persist, s.roomId, s.id)
+    )
   }
 
   forgetSession() {
+    const info = this.resumable()
+    if (info) clearPersisted(this.opts.persist, info.roomId, info.session.id)
+    clearResume(this.opts.persist)
     saveSession(this.opts.store, null)
     this.session = null
     this.set({})
+  }
+
+  /** While in a started game, keep the resume record fresh (2s heartbeat). */
+  private startResumeBeat() {
+    this.stopResumeBeat()
+    const beat = () => {
+      const session = this.session
+      const state = this.node?.getView().state
+      if (session && state && state.phase !== "FINISHED")
+        touchResume(this.opts.persist, session, this.tabId, Date.now())
+    }
+    beat()
+    this.resumeTimer = setInterval(beat, RESUME_BEAT_MS)
+  }
+
+  private stopResumeBeat() {
+    if (this.resumeTimer) clearInterval(this.resumeTimer)
+    this.resumeTimer = null
   }
 
   private newTransport(): WebRtcTransport {
@@ -164,9 +225,23 @@ export class AppController {
     this.node = node
     this.unsubNode = node.subscribe(() => {
       this.maintainInvite()
+      this.confirmConnecting(node)
       for (const fn of this.listeners) fn()
     })
+    this.startResumeBeat()
     this.set({ screen: { name: "room" }, busy: false })
+  }
+
+  /** "Connecting Bob…" turns into "Bob joined" once his link is open. */
+  private confirmConnecting(node: GameNode) {
+    const n = this.state.notice
+    if (n?.code !== "connecting" || !n.params?.id) return
+    const peer = node.getView().peers.find((p) => p.id === n.params?.id)
+    if (peer?.link !== "connected") return
+    this.set({ notice: { code: "joined", params: n.params } })
+    setTimeout(() => {
+      if (this.state.notice?.code === "joined") this.set({ notice: null })
+    }, 4000)
   }
 
   // ---------------------------------------------------------------- Host
@@ -188,7 +263,7 @@ export class AppController {
         },
         transport,
         mode: { kind: "host", config },
-        store: this.opts.store,
+        store: this.opts.persist,
         logger: this.logger,
       })
       this.attachNode(node)
@@ -304,7 +379,7 @@ export class AppController {
       await entry.link.acceptAnswer(a.s)
       this.set({
         invite: null,
-        notice: { code: "connecting", params: { name: a.m } },
+        notice: { code: "connecting", params: { name: a.m, id: a.p } },
         error: null,
       })
       if (entry.info.kind === "join") this.maintainInvite()
@@ -317,8 +392,39 @@ export class AppController {
 
   // ---------------------------------------------------------------- Player
 
+  /**
+   * Show the join screen right away, then decode the invite so the screen can
+   * say what it is (new player vs. rejoin) or why it is unusable.
+   */
   openJoin(offerText: string) {
-    this.set({ screen: { name: "join", offerText }, error: null })
+    this.set({
+      screen: { name: "join", offerText, offer: null, offerError: null },
+      error: null,
+    })
+    decodeOffer(offerText).then(
+      (o) =>
+        this.setJoinPeek(
+          offerText,
+          { roomId: o.r, kind: o.k, inviterId: o.h },
+          null
+        ),
+      (e) =>
+        this.setJoinPeek(
+          offerText,
+          null,
+          e instanceof QrError ? e.code : "offerInvalid"
+        )
+    )
+  }
+
+  private setJoinPeek(
+    offerText: string,
+    offer: OfferPeek | null,
+    offerError: AppErrorCode | null
+  ) {
+    const s = this.state.screen
+    if (s.name !== "join" || s.offerText !== offerText) return
+    this.set({ screen: { ...s, offer, offerError } })
   }
 
   /** Player scanned the Host's (or a member's) offer: create the answer QR. */
@@ -330,15 +436,13 @@ export class AppController {
       let session: Session
       const rejoin = o.k === "rejoin"
       if (rejoin) {
-        const prev = this.session
-        if (
-          !prev ||
-          prev.roomId !== o.r ||
-          !loadPersisted(this.opts.store, prev.roomId, prev.id)?.state
-        ) {
+        const info = this.resumable()
+        if (!info || info.roomId !== o.r)
           throw new AppError("noPreviousSession", { roomId: o.r })
-        }
-        session = prev
+        if (info.status === "openElsewhere") throw new AppError("openElsewhere")
+        session = info.session
+        this.session = session
+        saveSession(this.opts.store, session)
       } else {
         saveName(name)
         session = await newSession(o.r, sanitizeName(name))
@@ -360,7 +464,13 @@ export class AppController {
       })
       this.set({
         busy: false,
-        screen: { name: "answer", answerText, roomId: o.r, rejoin },
+        screen: {
+          name: "answer",
+          answerText,
+          roomId: o.r,
+          rejoin,
+          startedAt: Date.now(),
+        },
       })
       await transport.waitOpen(o.h, CONNECT_TIMEOUT_MS)
       if (this.transport !== transport) return
@@ -373,16 +483,20 @@ export class AppController {
         },
         transport,
         mode: rejoin ? { kind: "restore" } : { kind: "guest", hostId: o.h },
-        store: this.opts.store,
+        store: this.opts.persist,
         logger: this.logger,
       })
       this.attachNode(node)
     } catch (e) {
       // Cancelled or superseded (backHome, a newer join): nothing to report.
       if (transport && this.transport !== transport) return
-      if (e instanceof Error && e.message === "timeout")
+      if (e instanceof Error && e.message === "timeout") {
+        // Leave the dead-end "waiting" screen; the error banner explains why.
+        this.transport?.closeAll()
+        this.transport = null
+        this.set({ screen: { name: "home" } })
         this.fail(new AppError("connectTimeout"))
-      else this.fail(e)
+      } else this.fail(e)
     }
   }
 
@@ -390,6 +504,8 @@ export class AppController {
 
   leave() {
     this.stopInviteTimer()
+    this.stopResumeBeat()
+    clearResume(this.opts.persist)
     this.node?.leave()
     this.node?.stop()
     this.unsubNode?.()

@@ -1,6 +1,6 @@
 import type { KeyValueStore } from "@/multiplayer/env"
 
-/** Per-tab session (sessionStorage): survives reload, not shared between tabs. */
+/** Identity of a player in one room. Stored per tab; see resume.ts. */
 export interface Session {
   roomId: string
   id: string
@@ -74,23 +74,22 @@ export function saveName(name: string): void {
   }
 }
 
-/** sessionStorage wrapped as KeyValueStore, falling back to memory. */
-export function sessionStore(): KeyValueStore {
+/** Web Storage wrapped as KeyValueStore, falling back to memory. */
+function webStore(pick: () => Storage): KeyValueStore {
   const mem = new Map<string, string>()
-  const ok = (() => {
-    try {
-      sessionStorage.setItem("nh:probe", "1")
-      sessionStorage.removeItem("nh:probe")
-      return true
-    } catch {
-      return false
-    }
-  })()
-  return ok
+  let storage: Storage | null = null
+  try {
+    storage = pick()
+    storage.setItem("nh:probe", "1")
+    storage.removeItem("nh:probe")
+  } catch {
+    storage = null
+  }
+  return storage
     ? {
-        get: (k) => sessionStorage.getItem(k),
-        set: (k, v) => sessionStorage.setItem(k, v),
-        remove: (k) => sessionStorage.removeItem(k),
+        get: (k) => storage.getItem(k),
+        set: (k, v) => storage.setItem(k, v),
+        remove: (k) => storage.removeItem(k),
       }
     : {
         get: (k) => mem.get(k) ?? null,
@@ -98,3 +97,9 @@ export function sessionStore(): KeyValueStore {
         remove: (k) => void mem.delete(k),
       }
 }
+
+/** Per tab: survives a reload, lost when the tab/app is closed. */
+export const sessionStore = () => webStore(() => sessionStorage)
+
+/** Per browser: survives closing the app (used to resume a started game). */
+export const persistentStore = () => webStore(() => localStorage)
