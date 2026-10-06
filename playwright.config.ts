@@ -1,7 +1,7 @@
-import { defineConfig } from "@playwright/test";
-import { existsSync } from "node:fs";
+import { defineConfig } from "@playwright/test"
+import { existsSync } from "node:fs"
 
-const localChromium = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const localChromium = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 export default defineConfig({
   testDir: "e2e",
@@ -11,16 +11,23 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     baseURL: "http://localhost:4173/",
+    // The app picks its language from the browser; the specs assert Vietnamese text.
+    locale: "vi-VN",
     launchOptions: {
       executablePath: existsSync(localChromium) ? localChromium : undefined,
       // Expose raw host candidates instead of mDNS names so contexts on one machine can connect.
-      args: ["--disable-features=WebRtcHideLocalIpsWithMdns", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
+      args: [
+        "--disable-features=WebRtcHideLocalIpsWithMdns",
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
+      ],
     },
   },
   webServer: {
-    command: "npx vite build && npx vite preview --port 4173 --strictPort",
+    command:
+      "pnpm exec vite build && pnpm exec vite preview --port 4173 --strictPort",
     url: "http://localhost:4173/",
     reuseExistingServer: true,
     timeout: 120_000,
   },
-});
+})

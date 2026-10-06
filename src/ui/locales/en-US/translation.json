@@ -1,0 +1,161 @@
+{
+  "answer": {
+    "copy": "Copy reply code",
+    "qrLabel": "Reply code",
+    "showToHost": "Show this screen to the Host to scan.",
+    "showToInviter": "Show this screen to the person who invited you.",
+    "title": "Almost there!",
+    "titleRejoin": "Rejoin the game",
+    "waiting": "Waiting for connection…"
+  },
+  "app": {
+    "tagline": "Play together across phones — no server needed.",
+    "title": "Number Hunt"
+  },
+  "blocker": {
+    "meshIncomplete": "Devices are still connecting to each other…",
+    "needPlayers": "At least 2 players are needed",
+    "notReady": "Not everyone is ready"
+  },
+  "close": {
+    "backHome": "Back to home",
+    "hostLeft": "The Host left the lobby. The room is closed.",
+    "left": "You left the room.",
+    "removed": "You were removed from the room.",
+    "unknown": "The room is closed."
+  },
+  "common": {
+    "cancel": "Cancel",
+    "copied": "Copied",
+    "join": "Join",
+    "language": "Language",
+    "yourName": "Your name"
+  },
+  "config": {
+    "fixedStep": "Fixed step",
+    "mode": "Mode",
+    "modeRandom": "Random (reshuffle after each number)",
+    "modeTraditional": "Classic (fixed board)",
+    "numberCount": "How many numbers",
+    "numberMode": "Number sequence",
+    "playerLimit": "Max players",
+    "randomStep": "Random step",
+    "randomSteps": "Possible steps (comma-separated)",
+    "sequential": "Consecutive 1, 2, 3…",
+    "sizeLarge": "Large",
+    "sizeMode": "Number size",
+    "sizeRandom": "Random",
+    "sizeSmall": "Small",
+    "step": "Step"
+  },
+  "errors": {
+    "answerInvalid": "Invalid reply code",
+    "answerNotPlayer": "This is not a player's reply code",
+    "answerVersion": "Unsupported reply code version",
+    "authFailed": "Could not verify this player",
+    "connectTimeout": "Could not connect. Try again with a new invite.",
+    "gameStarted": "The game has started; joining is closed",
+    "inviteExpired": "The invite has expired",
+    "inviteUsed": "The invite was already used or is no longer valid",
+    "nameInvalid": "Invalid player name",
+    "noPreviousSession": "This device/tab has no previous session in room {{roomId}}",
+    "notMember": "This person is not in the game",
+    "offerInvalid": "Invalid invite code",
+    "offerVersion": "Unsupported invite version",
+    "roomFull": "The room is full",
+    "selfJoin": "You cannot join your own room",
+    "unexpected": "Something went wrong: {{detail}}",
+    "wrongHost": "This reply code is meant for someone else",
+    "wrongRoom": "This reply code belongs to another room"
+  },
+  "game": {
+    "countdownGo": "Go!",
+    "desync": "Data out of sync",
+    "desyncDetail": "Requesting fresh data from the Host…",
+    "electing": "Electing a new Host ({{alive}}/{{total}} online)",
+    "electingNoQuorum": "Not enough players to elect a new Host: {{alive}}/{{total}} online, {{quorum}} needed. The game is paused until someone returns.",
+    "find": "Find",
+    "finished": "Game over!",
+    "hostLost": "Host disconnected",
+    "inviteBack": "Invite a dropped player back",
+    "leave": "Leave room",
+    "leaveConfirm": "Leave the game? You still count as a player.",
+    "menu": "Menu",
+    "nextRules": "Change rules for the next round",
+    "noTarget": "All found!",
+    "paused": "Paused",
+    "pausedDetail": "At least {{quorum}}/{{total}} players must be online to continue ({{alive}} online)",
+    "rematch": "Play again",
+    "resumeNewHost": "Resuming with a new Host",
+    "roomInfo": "Room {{roomId}} · term {{term}} · {{alive}}/{{total}} online",
+    "syncing": "Syncing the game…",
+    "waitRematch": "Waiting for the Host to start a new round…"
+  },
+  "home": {
+    "create": "Create room",
+    "forgetGame": "Discard this game",
+    "namePlaceholder": "e.g. Alex",
+    "pasteInvite": "Paste invite link / code",
+    "resume": "You have an unfinished game in room {{roomId}}. Ask someone in the room to open “Invite a dropped player back” and scan their code.",
+    "scanInvite": "Scan invite code",
+    "scanRejoin": "Scan rejoin code"
+  },
+  "invite": {
+    "copyLink": "Copy invite link",
+    "creating": "Creating invite…",
+    "pasteAnswer": "Paste the reply code manually",
+    "qrLabel": "Invite code",
+    "scanAnswer": "Scan reply code",
+    "step1": "The player scans this code with their phone camera.",
+    "step2": "They will see a reply code — tap “Scan reply code” to scan it.",
+    "submit": "Confirm",
+    "titleJoin": "Invite players",
+    "titleRejoin": "Invite back"
+  },
+  "join": {
+    "preparing": "Preparing…",
+    "title": "Join a room"
+  },
+  "lobby": {
+    "entering": "Entering room…",
+    "linked": "connected",
+    "linking": "connecting…",
+    "notReady": "Not ready",
+    "ready": "Ready",
+    "room": "Room",
+    "rules": "Rules",
+    "setReady": "I'm ready",
+    "start": "Start",
+    "unsetReady": "Not ready yet",
+    "you": "(you)"
+  },
+  "notice": {
+    "connecting": "Connecting {{name}}…"
+  },
+  "reject": {
+    "claimed": "Already found",
+    "lostRace": "Just a bit too slow!",
+    "noQuorum": "Waiting for players",
+    "notHost": "The Host just changed",
+    "phase": "Not yet",
+    "reserved": "Someone was faster!",
+    "staleTerm": "The Host just changed",
+    "timeout": "Lost connection to the Host",
+    "unknown": "Tap not accepted",
+    "wrongNumber": "Wrong number!"
+  },
+  "scanner": {
+    "close": "Close camera",
+    "noPermission": "Could not open the camera. Allow camera access or paste the code manually.",
+    "unsupported": "This browser cannot use the camera (HTTPS required)."
+  },
+  "status": {
+    "ACTIVE": "Connected",
+    "CLOSED": "Closed",
+    "DESYNC": "Out of sync",
+    "LOBBY": "Lobby",
+    "MIGRATING": "Electing new Host…",
+    "PAUSED": "Paused — waiting for players",
+    "SYNCING": "Syncing…"
+  }
+}

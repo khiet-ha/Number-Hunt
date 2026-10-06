@@ -1,0 +1,50 @@
+version: 2
+updates:
+  # Action pin theo tag (@v4) vẫn nhận patch tự động, nhưng major thì không —
+  # dependabot mở PR khi có major mới.
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: '02:00'
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    labels: ['type: ci', 'dependencies']
+
+  # `npm` là tên ecosystem của dependabot cho mọi lockfile JS, kể cả
+  # pnpm-lock.yaml — repo vẫn chỉ dùng pnpm.
+  - package-ecosystem: npm
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: '02:00'
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+    labels: ['type: chore', 'dependencies']
+    ignore:
+      # Preset v10 cần conventional-changelog-writer@9, nhưng
+      # @semantic-release/release-notes-generator@14 vẫn dùng writer@8 → release
+      # hỏng ở bước generateNotes ("Missing helper"). Bỏ ignore khi
+      # release-notes-generator ra bản stable dùng writer@9.
+      - dependency-name: conventional-changelog-conventionalcommits
+        update-types: ['version-update:semver-major']
+    groups:
+      # Gom lại để không ngập PR: 1 PR cho toàn bộ dev tooling, 1 PR cho patch runtime.
+      dev-tooling:
+        applies-to: version-updates
+        dependency-type: development
+        update-types: ['minor', 'patch']
+      runtime-patches:
+        applies-to: version-updates
+        dependency-type: production
+        update-types: ['patch']

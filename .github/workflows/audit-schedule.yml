@@ -1,0 +1,159 @@
+name: audit schedule
+
+# Audit theo PR chỉ chạy khi có người mở PR. Tuần nào không ai mở PR thì advisory mới
+# công bố sẽ không ai biết. Workflow này là lưới an toàn: chạy định kỳ, không chặn ai,
+# và ghi kết quả vào một issue duy nhất (tạo / cập nhật / tự đóng khi sạch).
+on:
+  schedule:
+    # 02:00 thứ Hai giờ VN (UTC+7) = 19:00 Chủ nhật UTC.
+    # Lưu ý: workflow theo `schedule` CHỈ chạy trên nhánh mặc định (master) —
+    # nên đây là ảnh chụp của lockfile đang chạy production.
+    - cron: '0 19 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-schedule
+  cancel-in-progress: false
+
+env:
+  AUDIT_LABEL: security-audit
+
+jobs:
+  audit:
+    name: audit + report issue
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write # tạo / cập nhật / đóng issue báo cáo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          install: 'false' # audit chỉ đọc pnpm-lock.yaml
+
+      - name: Run audit
+        id: audit
+        run: |
+          pnpm audit --json --ignore-registry-errors > "$RUNNER_TEMP/full.json" || true
+          pnpm audit --prod --json --ignore-registry-errors > "$RUNNER_TEMP/prod.json" || true
+          node scripts/audit-summary.mjs "$RUNNER_TEMP/full.json" "$RUNNER_TEMP/prod.json" \
+            > "$RUNNER_TEMP/report.md"
+          cat "$RUNNER_TEMP/report.md" >> "$GITHUB_STEP_SUMMARY"
+
+          # Đếm để quyết định có mở issue không. Registry lỗi → coi như KHÔNG có dữ liệu
+          # (không báo "sạch", cũng không mở issue rỗng).
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { appendFileSync } from "node:fs";
+            const read = (p) => { try { const r = readFileSync(p, "utf8").trim(); return r ? JSON.parse(r) : null; } catch { return null; } };
+            const full = read(process.env.RUNNER_TEMP + "/full.json");
+            const prod = read(process.env.RUNNER_TEMP + "/prod.json");
+            const out = (k, v) => appendFileSync(process.env.GITHUB_OUTPUT, `${k}=${v}\n`);
+            if (!full || typeof full.advisories !== "object" || (prod && typeof prod.advisories !== "object")) { out("usable", "false"); out("total", "0"); out("highplus", "0"); out("prod", "0"); process.exit(0); }
+            const advs = Object.entries(full.advisories ?? {});
+            const prodIds = new Set(Object.keys(prod?.advisories ?? {}));
+            out("usable", "true");
+            out("total", advs.length);
+            out("highplus", advs.filter(([, a]) => a.severity === "high" || a.severity === "critical").length);
+            out("prod", advs.filter(([id]) => prodIds.has(id)).length);
+          '
+
+      - name: Create / update / close report issue
+        if: steps.audit.outputs.usable == 'true'
+        uses: actions/github-script@v9
+        env:
+          TOTAL: ${{ steps.audit.outputs.total }}
+          HIGHPLUS: ${{ steps.audit.outputs.highplus }}
+          PROD: ${{ steps.audit.outputs.prod }}
+        with:
+          script: |
+            const fs = require('fs');
+            const label = process.env.AUDIT_LABEL;
+            const total = Number(process.env.TOTAL);
+            const highplus = Number(process.env.HIGHPLUS);
+            const prod = Number(process.env.PROD);
+            const report = fs.readFileSync(`${process.env.RUNNER_TEMP}/report.md`, 'utf8');
+            const { owner, repo } = context.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+
+            // --- Đảm bảo label tồn tại (API label thuộc scope issues) ---
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: label });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner, repo, name: label, color: 'B60205',
+                description: 'Báo cáo pnpm audit định kỳ',
+              });
+              core.info(`Đã tạo label ${label}`);
+            }
+
+            // --- Tìm issue báo cáo đang mở (chỉ những cái workflow này tạo) ---
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: label, per_page: 10,
+            });
+            const existing = open[0];
+
+            // --- Ngưỡng báo cáo: có advisory ở nhánh prod, HOẶC có high/critical ---
+            const shouldReport = prod > 0 || highplus > 0;
+
+            if (!shouldReport) {
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: existing.number,
+                  body: `Audit đã sạch (không còn advisory nào ở nhánh production, không còn high/critical). Tự đóng.\n\n[Run](${runUrl})`,
+                });
+                await github.rest.issues.update({
+                  owner, repo, issue_number: existing.number, state: 'closed', state_reason: 'completed',
+                });
+                core.info(`Đã đóng issue #${existing.number}`);
+              } else {
+                core.info('Sạch, không có issue nào đang mở — không làm gì.');
+              }
+              await core.summary.addRaw('\n\nAudit sạch — không mở issue.').write();
+              return;
+            }
+
+            const title =
+              `chore(security): dependency audit — ${highplus} high+` +
+              (prod > 0 ? `, ${prod} ở nhánh production` : ', không có cái nào ở production');
+
+            const body = [
+              report,
+              '',
+              '---',
+              '',
+              prod > 0
+                ? '**Cần xử lý:** có advisory trong nhánh production — nó đi vào image đang chạy.'
+                : 'Không có advisory nào ở nhánh production. Số còn lại chỉ nằm trong devDependencies: có trên máy dev và CI runner, **không** đi vào image.',
+              '',
+              `Issue này do workflow [audit schedule](${context.serverUrl}/${owner}/${repo}/blob/${context.payload.repository?.default_branch ?? 'master'}/.github/workflows/audit-schedule.yml) tự cập nhật mỗi tuần, và tự đóng khi sạch. Đừng sửa tay phần trên.`,
+              '',
+              `[Run mới nhất](${runUrl}) · commit \`${context.sha.substring(0, 7)}\``,
+            ].join('\n');
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner, repo, issue_number: existing.number, title, body,
+              });
+              core.info(`Đã cập nhật issue #${existing.number}`);
+              await core.summary.addRaw(`\n\nĐã cập nhật issue #${existing.number}.`).write();
+            } else {
+              const { data: created } = await github.rest.issues.create({
+                owner, repo, title, body, labels: [label],
+              });
+              core.info(`Đã tạo issue #${created.number}`);
+              await core.summary.addRaw(`\n\nĐã tạo issue #${created.number}.`).write();
+            }
+
+      - name: Registry không phản hồi
+        if: steps.audit.outputs.usable != 'true'
+        run: |
+          echo "::warning::Không lấy được dữ liệu advisory (registry lỗi). Bỏ qua lần này, tuần sau chạy lại."
+          echo "Không lấy được dữ liệu advisory từ registry — lần chạy này không kết luận được gì." >> "$GITHUB_STEP_SUMMARY"

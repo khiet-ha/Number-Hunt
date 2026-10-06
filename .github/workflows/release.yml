@@ -1,0 +1,219 @@
+name: release
+
+on:
+  push:
+    branches:
+      - master # → kênh stable (1.4.0) + deploy GitHub Pages
+      - develop # → kênh beta   (1.5.0-beta.1), chỉ tag + GitHub pre-release
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Chỉ tính version, không tạo tag / không deploy'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  FORCE_COLOR: '3'
+  VERSION_FILE: .release-version
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+      channel: ${{ steps.channel.outputs.channel }}
+
+    environment: ${{ github.ref_name == 'master' && 'production' || 'beta' }}
+
+    permissions:
+      contents: write # tạo tag + GitHub Release
+      issues: write # semantic-release comment / label
+      pull-requests: write # semantic-release comment lên PR liên quan
+
+    steps:
+      - name: Resolve channel
+        id: channel
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          case "$REF_NAME" in
+            master)  echo "channel=stable" >> "$GITHUB_OUTPUT" ;;
+            develop) echo "channel=beta"   >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::Branch '$REF_NAME' không được cấu hình release (chỉ master | develop)"
+              exit 1
+              ;;
+          esac
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # semantic-release cần toàn bộ history + tags
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      # Không cần build ở đây: site được build lại từ đúng tag trong job pages-build.
+      # Release notes nằm ở GitHub Release (không commit CHANGELOG), nên job này
+      # không bao giờ push commit lên nhánh được bảo vệ.
+      - name: Compute next version
+        id: next
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          rm -f "$VERSION_FILE"
+          pnpm exec semantic-release --dry-run
+          if [ -s "$VERSION_FILE" ]; then
+            VERSION="$(tr -d ' \n' < "$VERSION_FILE")"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "Version tiếp theo: $VERSION"
+          else
+            echo "version=" >> "$GITHUB_OUTPUT"
+            echo "Không có commit nào đủ điều kiện release."
+          fi
+
+      - name: Nothing to release
+        if: steps.next.outputs.version == ''
+        run: |
+          {
+            echo "## Release — ${{ steps.channel.outputs.channel }}"
+            echo ""
+            echo "Bỏ qua: không có commit nào tạo version mới kể từ release trước."
+            echo "Chỉ \`feat\` / \`fix\` / \`perf\` / \`hotfix\` / \`release\` / breaking change mới bump version."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Semantic release
+        if: steps.next.outputs.version != '' && !inputs.dry_run
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          HUSKY: '0'
+        run: pnpm exec semantic-release
+
+      - name: Summary
+        if: steps.next.outputs.version != ''
+        env:
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+          VERSION: ${{ steps.next.outputs.version }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          {
+            echo "## Release — $CHANNEL"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`$VERSION\` |"
+            echo "| Tag | \`v$VERSION\` |"
+            echo "| Dry run | \`$DRY\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # GitHub Pages chỉ có một site, nên chỉ bản stable (master) được deploy.
+  # Kênh beta dùng để thử trên điện thoại thật qua `pnpm build && pnpm preview`
+  # hoặc artifact của CI.
+  pages-build:
+    name: build site
+    needs: release
+    if: >-
+      github.ref_name == 'master'
+      && needs.release.outputs.version != ''
+      && !inputs.dry_run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # `actions/configure-pages` gọi REST API /repos/{owner}/{repo}/pages.
+      # Thiếu scope này là 403 "Resource not accessible by integration".
+      pages: write
+
+    steps:
+      # Checkout đúng tag vừa được tạo, không phải HEAD: giữa lúc release chạy
+      # có thể đã có commit mới push lên master.
+      - name: Checkout tag
+        uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      # Đặt TRƯỚC install/build: nếu Pages chưa bật hoặc chưa để source là
+      # "GitHub Actions" thì hỏng ngay trong vài giây, không tốn cả lượt build.
+      - uses: actions/configure-pages@v6
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      # Không có @semantic-release/npm nên package.json trong tag vẫn mang
+      # version cũ. Stamp lại để artifact tự mô tả đúng nó là bản nào.
+      - name: Stamp version into package.json
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        # pnpm là package manager duy nhất của repo; sửa JSON bằng Node để
+        # không phụ thuộc npm CLI.
+        run: |
+          node -e '
+            const fs = require("node:fs")
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"))
+            pkg.version = process.env.VERSION
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n")
+          '
+
+      - name: Build
+        run: pnpm build
+
+      # App không có route con (offer nằm trong #fragment), nhưng vẫn để
+      # 404.html phòng người dùng gõ sai path. `.nojekyll` để Pages không nuốt
+      # file bắt đầu bằng `_`.
+      - name: Chuẩn bị file cho Pages
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./dist
+
+  pages-deploy:
+    name: deploy site
+    needs: [release, pages-build]
+    if: github.ref_name == 'master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      pages: write
+      id-token: write
+
+    # Pages chỉ nhận một deployment tại một thời điểm.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Summary
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+          URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          {
+            echo "## Site"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`$VERSION\` |"
+            echo "| Tag | \`v$VERSION\` |"
+            echo "| URL | $URL |"
+          } >> "$GITHUB_STEP_SUMMARY"
