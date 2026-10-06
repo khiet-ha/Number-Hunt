@@ -1,4 +1,4 @@
-import type { PlayerId } from "../game/types";
+import type { PlayerId } from "@/game/types";
 
 /**
  * Abstractions the multiplayer core depends on. The core never touches

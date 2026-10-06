@@ -1,6 +1,6 @@
-import { applyEvent, currentTarget, quorumSize, sameEventContent, stateHash, validateConfig, validateEvent } from "../game/reducer";
-import type { GameConfig, GameEvent, GameEventPayload, GameState, Member, PlayerId } from "../game/types";
-import { LIMITS, PLAYER_COLORS, eventId } from "../game/types";
+import { applyEvent, currentTarget, quorumSize, sameEventContent, stateHash, validateConfig, validateEvent } from "@/game/reducer";
+import type { GameConfig, GameEvent, GameEventPayload, GameState, Member, PlayerId } from "@/game/types";
+import { LIMITS, PLAYER_COLORS, eventId } from "@/game/types";
 import type { Clock, KeyValueStore, LinkState, Transport } from "./env";
 import { EventLogger, LruSet, MemoryStore, realClock } from "./env";
 import type {

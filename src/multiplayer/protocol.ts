@@ -1,4 +1,4 @@
-import type { GameConfig, GameEvent, GameState, Member, PlayerId } from "../game/types";
+import type { GameConfig, GameEvent, GameState, Member, PlayerId } from "@/game/types";
 
 /**
  * Wire protocol v2 (see docs/design/03-wire-protocol.md).
