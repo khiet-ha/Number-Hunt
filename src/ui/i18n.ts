@@ -98,7 +98,16 @@ export function useT() {
   return i18next.t
 }
 
-/** For keys built from runtime data (e.g. a reason code from the network). */
-export function hasKey(key: string): boolean {
-  return i18next.exists(key)
+/**
+ * Translate a code that arrives at runtime (a reject reason from the Host, a
+ * close reason, a start blocker). Unknown codes fall back to `<prefix>.unknown`
+ * when that key exists, otherwise to the raw code.
+ */
+export function tCode(prefix: "blocker" | "close" | "reject", code: string) {
+  const key = `${prefix}.${code}`
+  if (i18next.exists(key)) return i18next.t(key as never) as string
+  const unknown = `${prefix}.unknown`
+  return i18next.exists(unknown)
+    ? (i18next.t(unknown as never) as string)
+    : code
 }

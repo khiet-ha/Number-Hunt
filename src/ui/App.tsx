@@ -5,12 +5,14 @@ import { loadName } from "@/app/identity"
 import { Debug } from "./Debug"
 import { Game } from "./Game"
 import { useController } from "./hooks"
+import { tCode, useT } from "./i18n"
+import { LanguageSelect } from "./LanguageSelect"
 import { Lobby } from "./Lobby"
 import { QrCode } from "./QrCode"
 import { Scanner } from "./Scanner"
-import { CLOSE_TEXT } from "./text"
 
 function Home({ c }: { c: AppController }) {
+  const t = useT()
   const [name, setName] = useState(loadName())
   const [scan, setScan] = useState(false)
   const [paste, setPaste] = useState("")
@@ -18,18 +20,16 @@ function Home({ c }: { c: AppController }) {
   const valid = name.trim().length > 0
   return (
     <div class="home">
-      <h1>Tìm Số</h1>
-      <p class="muted">
-        Chơi cùng nhau trên nhiều điện thoại, không cần máy chủ.
-      </p>
+      <h1>{t("app.title")}</h1>
+      <p class="muted">{t("app.tagline")}</p>
       <label>
-        Tên của bạn
+        {t("common.yourName")}
         <input
           data-testid="name"
           maxLength={16}
           value={name}
           onInput={(e) => setName((e.target as HTMLInputElement).value)}
-          placeholder="Ví dụ: Lan"
+          placeholder={t("home.namePlaceholder")}
         />
       </label>
       <button
@@ -37,10 +37,10 @@ function Home({ c }: { c: AppController }) {
         disabled={!valid || c.state.busy}
         onClick={() => void c.createRoom(name)}
       >
-        Tạo phòng
+        {t("home.create")}
       </button>
       <button class="secondary" disabled={!valid} onClick={() => setScan(true)}>
-        Quét mã mời
+        {t("home.scanInvite")}
       </button>
       {scan && (
         <Scanner
@@ -52,7 +52,7 @@ function Home({ c }: { c: AppController }) {
         />
       )}
       <details>
-        <summary>Dán link / mã mời</summary>
+        <summary>{t("home.pasteInvite")}</summary>
         <textarea
           data-testid="offer-input"
           rows={3}
@@ -64,21 +64,17 @@ function Home({ c }: { c: AppController }) {
           disabled={!valid || !paste.trim()}
           onClick={() => void c.acceptOffer(paste, name)}
         >
-          Tham gia
+          {t("common.join")}
         </button>
       </details>
       {resume && (
         <section class="card">
-          <p>
-            Bạn đang có một trận dở trong phòng <b>{resume.roomId}</b>. Nhờ một
-            người trong phòng mở “Mời người chơi bị rớt vào lại” rồi quét mã của
-            họ.
-          </p>
+          <p>{t("home.resume", { roomId: resume.roomId })}</p>
           <button class="secondary" onClick={() => setScan(true)}>
-            Quét mã vào lại
+            {t("home.scanRejoin")}
           </button>
           <button class="link" onClick={() => c.forgetSession()}>
-            Bỏ trận này
+            {t("home.forgetGame")}
           </button>
         </section>
       )}
@@ -87,12 +83,13 @@ function Home({ c }: { c: AppController }) {
 }
 
 function Join({ c, offerText }: { c: AppController; offerText: string }) {
+  const t = useT()
   const [name, setName] = useState(loadName())
   return (
     <div class="home">
-      <h1>Tham gia phòng</h1>
+      <h1>{t("join.title")}</h1>
       <label>
-        Tên của bạn
+        {t("common.yourName")}
         <input
           data-testid="name"
           maxLength={16}
@@ -105,10 +102,10 @@ function Join({ c, offerText }: { c: AppController; offerText: string }) {
         disabled={!name.trim() || c.state.busy}
         onClick={() => void c.acceptOffer(offerText, name)}
       >
-        {c.state.busy ? "Đang chuẩn bị…" : "Tham gia"}
+        {c.state.busy ? t("join.preparing") : t("common.join")}
       </button>
       <button class="link" onClick={() => c.backHome()}>
-        Huỷ
+        {t("common.cancel")}
       </button>
     </div>
   )
@@ -123,16 +120,17 @@ function Answer({
   answerText: string
   rejoin: boolean
 }) {
+  const t = useT()
   return (
     <div class="home">
-      <h2>{rejoin ? "Vào lại trận" : "Gần xong!"}</h2>
-      <p>Đưa màn hình này cho {rejoin ? "người đã mời bạn" : "Host"} quét.</p>
-      <QrCode text={answerText} label="Mã trả lời" />
+      <h2>{rejoin ? t("answer.titleRejoin") : t("answer.title")}</h2>
+      <p>{rejoin ? t("answer.showToInviter") : t("answer.showToHost")}</p>
+      <QrCode text={answerText} label={t("answer.qrLabel")} />
       <button
         class="secondary"
         onClick={() => void navigator.clipboard?.writeText(answerText)}
       >
-        Sao chép mã trả lời
+        {t("answer.copy")}
       </button>
       <textarea
         readOnly
@@ -141,16 +139,17 @@ function Answer({
         value={answerText}
       />
       <p class="muted">
-        <span class="spinner small" /> Đang chờ kết nối…
+        <span class="spinner small" /> {t("answer.waiting")}
       </p>
       <button class="link" onClick={() => c.backHome()}>
-        Huỷ
+        {t("common.cancel")}
       </button>
     </div>
   )
 }
 
 export function App({ c, debug }: { c: AppController; debug: boolean }) {
+  const t = useT()
   useController(c)
   useEffect(() => {
     // Invite links carry the offer in the URL fragment (never sent to a server).
@@ -171,14 +170,16 @@ export function App({ c, debug }: { c: AppController; debug: boolean }) {
   const v = c.node?.getView() ?? null
   return (
     <main>
+      <LanguageSelect />
       {c.state.error && (
         <div class="banner error" onClick={() => c.clearError()}>
-          {c.state.error} <span class="close">×</span>
+          {t(`errors.${c.state.error.code}`, c.state.error.params)}{" "}
+          <span class="close">×</span>
         </div>
       )}
       {c.state.notice && !c.state.error && v?.status === "LOBBY" && (
         <div class="banner" onClick={() => c.clearError()}>
-          {c.state.notice}
+          {t(`notice.${c.state.notice.code}`, c.state.notice.params)}
         </div>
       )}
       {s.name === "home" && <Home c={c} />}
@@ -188,8 +189,8 @@ export function App({ c, debug }: { c: AppController; debug: boolean }) {
       )}
       {s.name === "room" && v && v.status === "CLOSED" && (
         <section class="card">
-          <p>{CLOSE_TEXT[v.closedReason ?? ""] ?? v.closedReason}</p>
-          <button onClick={() => c.leave()}>Về trang chủ</button>
+          <p>{tCode("close", v.closedReason ?? "")}</p>
+          <button onClick={() => c.leave()}>{t("close.backHome")}</button>
         </section>
       )}
       {s.name === "room" && v && v.status === "LOBBY" && <Lobby c={c} v={v} />}

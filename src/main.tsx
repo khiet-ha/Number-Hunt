@@ -5,6 +5,9 @@ import { render } from "preact"
 import { AppController } from "@/app/controller"
 import { sessionStore } from "@/app/identity"
 import { App } from "@/ui/App"
+import { initI18n } from "@/ui/i18n"
+
+initI18n()
 
 const params = new URLSearchParams(location.search)
 const debug = params.has("debug")

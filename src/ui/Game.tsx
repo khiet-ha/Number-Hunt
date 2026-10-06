@@ -6,9 +6,9 @@ import { currentTarget } from "@/game/reducer"
 import type { GameState } from "@/game/types"
 import type { NodeView } from "@/multiplayer/node"
 import { useTicker } from "./hooks"
+import { tCode, useT } from "./i18n"
 import { InvitePanel } from "./InvitePanel"
 import { ConfigForm } from "./Lobby"
-import { REJECT_TEXT, STATUS_TEXT } from "./text"
 
 function Board({
   state,
@@ -93,41 +93,44 @@ function Scores({ state, v }: { state: GameState; v: NodeView }) {
 }
 
 function Overlay({ v, state }: { v: NodeView; state: GameState | null }) {
+  const t = useT()
   const now = Date.now()
+  const counts = {
+    alive: String(v.aliveCount),
+    total: String(v.members.length),
+    quorum: String(v.quorum),
+  }
   if (v.status === "MIGRATING")
     return (
       <div class="overlay" data-testid="overlay">
         <div class="spinner" />
-        <p>Host mất kết nối</p>
+        <p>{t("game.hostLost")}</p>
         <p class="muted">
           {v.aliveCount >= v.quorum
-            ? `Đang bầu Host mới (${v.aliveCount}/${v.members.length} người online)`
-            : `Chưa đủ người để bầu Host mới: ${v.aliveCount}/${v.members.length} online, cần ${v.quorum}. Trận tạm dừng cho tới khi có người quay lại.`}
+            ? t("game.electing", counts)
+            : t("game.electingNoQuorum", counts)}
         </p>
       </div>
     )
   if (v.status === "PAUSED")
     return (
       <div class="overlay" data-testid="overlay">
-        <p>Tạm dừng</p>
-        <p class="muted">
-          Cần ít nhất {v.quorum}/{v.members.length} người online để tiếp tục (
-          {v.aliveCount} đang online)
-        </p>
+        <p>{t("game.paused")}</p>
+        <p class="muted">{t("game.pausedDetail", counts)}</p>
       </div>
     )
   if (v.status === "SYNCING")
     return (
       <div class="overlay" data-testid="overlay">
         <div class="spinner" />
-        <p>Đang đồng bộ trận đấu…</p>
+        <p>{t("game.syncing")}</p>
       </div>
     )
   if (v.status === "DESYNC")
     return (
       <div class="overlay" data-testid="overlay">
-        <p>Lỗi đồng bộ dữ liệu</p>
-        <p class="muted">Đang yêu cầu lại dữ liệu từ Host…</p>
+        <p>{t("game.desync")}</p>
+        <p class="muted">{t("game.desyncDetail")}</p>
       </div>
     )
   if (state?.phase === "COUNTDOWN") {
@@ -136,9 +139,9 @@ function Overlay({ v, state }: { v: NodeView; state: GameState | null }) {
       : 0
     return (
       <div class="overlay countdown" data-testid="overlay">
-        <p class="big">{left > 0 ? left : "Bắt đầu!"}</p>
+        <p class="big">{left > 0 ? left : t("game.countdownGo")}</p>
         {state.leadership.term > 0 && (
-          <p class="muted">Tiếp tục với Host mới</p>
+          <p class="muted">{t("game.resumeNewHost")}</p>
         )}
       </div>
     )
@@ -160,10 +163,11 @@ function Finished({
       (state.scores[b.id] ?? 0) - (state.scores[a.id] ?? 0) ||
       a.joinSequence - b.joinSequence
   )
+  const t = useT()
   const node = c.node!
   return (
     <section class="card finished" data-testid="finished">
-      <h2>Kết thúc!</h2>
+      <h2>{t("game.finished")}</h2>
       <ol class="ranking">
         {ranking.map((m, i) => (
           <li key={m.id}>
@@ -176,7 +180,7 @@ function Finished({
       {v.isLeader ? (
         <>
           <details>
-            <summary>Đổi luật cho ván sau</summary>
+            <summary>{t("game.nextRules")}</summary>
             <ConfigForm
               config={v.nextConfig ?? state.config}
               onChange={(cfg) =>
@@ -188,17 +192,18 @@ function Finished({
             />
           </details>
           <button data-testid="rematch" onClick={() => node.rematch()}>
-            Chơi ván mới
+            {t("game.rematch")}
           </button>
         </>
       ) : (
-        <p class="muted">Chờ Host bắt đầu ván mới…</p>
+        <p class="muted">{t("game.waitRematch")}</p>
       )}
     </section>
   )
 }
 
 export function Game({ c, v }: { c: AppController; v: NodeView }) {
+  const t = useT()
   const state = v.state
   const [menu, setMenu] = useState(false)
   useTicker(
@@ -215,32 +220,40 @@ export function Game({ c, v }: { c: AppController; v: NodeView }) {
         <div class="target" data-testid="target">
           {state?.phase === "PLAYING" || state?.phase === "COUNTDOWN" ? (
             <>
-              Tìm <b>{target}</b>
+              {t("game.find")} <b>{target}</b>
             </>
           ) : state?.phase === "FINISHED" ? (
-            "Hết số!"
+            t("game.noTarget")
           ) : (
             "…"
           )}
         </div>
         <span class={`status s-${v.status}`} data-testid="status">
-          {STATUS_TEXT[v.status]}
+          {t(`status.${v.status}`)}
         </span>
-        <button class="icon" aria-label="Menu" onClick={() => setMenu(!menu)}>
+        <button
+          class="icon"
+          aria-label={t("game.menu")}
+          onClick={() => setMenu(!menu)}
+        >
           ☰
         </button>
       </header>
       {state && <Scores state={state} v={v} />}
       {reject && (
         <div class={`toast ${reject.reason}`}>
-          {REJECT_TEXT[reject.reason] ?? reject.reason}
+          {tCode("reject", reject.reason)}
         </div>
       )}
       {menu && (
         <section class="card menu">
           <p class="muted">
-            Phòng {v.roomId} · term {v.term} · {v.aliveCount}/{v.members.length}{" "}
-            online
+            {t("game.roomInfo", {
+              roomId: v.roomId,
+              term: String(v.term),
+              alive: String(v.aliveCount),
+              total: String(v.members.length),
+            })}
           </p>
           <button
             class="secondary"
@@ -248,19 +261,16 @@ export function Game({ c, v }: { c: AppController; v: NodeView }) {
               void c.createInvite("rejoin")
             }}
           >
-            Mời người chơi bị rớt vào lại
+            {t("game.inviteBack")}
           </button>
           {c.state.invite?.kind === "rejoin" && (
-            <InvitePanel c={c} title="Mời vào lại" />
+            <InvitePanel c={c} title={t("invite.titleRejoin")} />
           )}
           <button
             class="danger"
-            onClick={() =>
-              confirm("Rời trận? Bạn vẫn được tính trong số người chơi.") &&
-              c.leave()
-            }
+            onClick={() => confirm(t("game.leaveConfirm")) && c.leave()}
           >
-            Rời phòng
+            {t("game.leave")}
           </button>
         </section>
       )}
