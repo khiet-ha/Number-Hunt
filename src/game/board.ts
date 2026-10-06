@@ -23,7 +23,7 @@ export interface Cell {
 
 export function gridFor(count: number): { cols: number; rows: number } {
   // Pick cols/rows so cells are roughly square on a 3:4 board.
-  let cols = Math.max(1, Math.ceil(Math.sqrt((count * BOARD_W) / BOARD_H)));
+  const cols = Math.max(1, Math.ceil(Math.sqrt((count * BOARD_W) / BOARD_H)));
   let rows = Math.ceil(count / cols);
   while (cols * rows < count) rows++;
   return { cols, rows };
