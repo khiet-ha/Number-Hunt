@@ -1,5 +1,5 @@
-import type { AppController } from "../app/controller";
-import type { NodeView } from "../multiplayer/node";
+import type { AppController } from "@/app/controller";
+import type { NodeView } from "@/multiplayer/node";
 import { useTicker } from "./hooks";
 
 /** Debug overlay (?debug=1): leadership, log position, links, last protocol events. */

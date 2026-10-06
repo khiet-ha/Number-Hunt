@@ -1,7 +1,7 @@
-import type { AppController } from "../app/controller";
-import type { GameConfig } from "../game/types";
-import { LIMITS } from "../game/types";
-import type { NodeView } from "../multiplayer/node";
+import type { AppController } from "@/app/controller";
+import type { GameConfig } from "@/game/types";
+import { LIMITS } from "@/game/types";
+import type { NodeView } from "@/multiplayer/node";
 import { InvitePanel } from "./InvitePanel";
 import { BLOCKER_TEXT } from "./text";
 

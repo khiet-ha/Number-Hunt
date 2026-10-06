@@ -1,4 +1,4 @@
-import type { LocalStatus } from "../multiplayer/protocol";
+import type { LocalStatus } from "@/multiplayer/protocol";
 
 export const STATUS_TEXT: Record<LocalStatus, string> = {
   LOBBY: "Phòng chờ",

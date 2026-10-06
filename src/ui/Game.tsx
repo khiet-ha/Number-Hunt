@@ -1,9 +1,9 @@
 import { useMemo, useState } from "preact/hooks";
-import type { AppController } from "../app/controller";
-import { BOARD_H, BOARD_W, generateBoard } from "../game/board";
-import { currentTarget } from "../game/reducer";
-import type { GameState } from "../game/types";
-import type { NodeView } from "../multiplayer/node";
+import type { AppController } from "@/app/controller";
+import { BOARD_H, BOARD_W, generateBoard } from "@/game/board";
+import { currentTarget } from "@/game/reducer";
+import type { GameState } from "@/game/types";
+import type { NodeView } from "@/multiplayer/node";
 import { InvitePanel } from "./InvitePanel";
 import { ConfigForm } from "./Lobby";
 import { useTicker } from "./hooks";

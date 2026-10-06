@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import type { AppController } from "../app/controller";
+import type { AppController } from "@/app/controller";
 import { QrCode } from "./QrCode";
 import { Scanner } from "./Scanner";
 

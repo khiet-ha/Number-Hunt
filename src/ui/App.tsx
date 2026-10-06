@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
-import type { AppController } from "../app/controller";
-import { loadName } from "../app/identity";
+import type { AppController } from "@/app/controller";
+import { loadName } from "@/app/identity";
 import { Debug } from "./Debug";
 import { Game } from "./Game";
 import { Lobby } from "./Lobby";
