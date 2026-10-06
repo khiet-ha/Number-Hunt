@@ -4,7 +4,9 @@ import globals from "globals"
 import tseslint from "typescript-eslint"
 
 // Layer boundaries (docs/design/01-architecture.md §1, docs/design/10-agent-rules.md):
-// game ← multiplayer ← app ← ui, while webrtc and qr only see shared types.
+// game ← multiplayer ← app ← ui. webrtc may only `import type` from game and
+// multiplayer; qr may use game (types and constants such as LIMITS) but not
+// multiplayer, webrtc, app or ui.
 // `typeOnly` targets may still be imported with `import type`.
 const layer = (name, forbidden, typeOnly = []) => ({
   files: [`src/${name}/**/*.{ts,tsx}`],

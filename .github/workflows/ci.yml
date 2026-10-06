@@ -4,6 +4,11 @@ on:
   pull_request:
     branches: [master, develop]
     types: [opened, synchronize, reopened]
+  # The release PR (develop → master) is opened with GITHUB_TOKEN when no
+  # RELEASE_TOKEN exists, and such PRs trigger no `pull_request` run. Running
+  # on push to develop gives its head SHA a `ci ok` check anyway.
+  push:
+    branches: [develop]
   workflow_dispatch:
 
 permissions:
@@ -132,7 +137,7 @@ jobs:
       # Danh sách advisory được chấp nhận rủi ro (pnpm.auditConfig.ignoreGhsas trong
       # package.json) kèm lý do + ngày rà lại: docs/security-audit.md.
       #
-      # CHẶN: chỉ trên nhánh production (thứ thật sự đi vào image) và chỉ từ high trở lên.
+      # CHẶN: chỉ trên nhánh production (thứ thật sự vào bundle của site) và chỉ từ high trở lên.
       # Nhánh dev (eslint/jest/commitlint/semantic-release) cố tình KHÔNG chặn — phần lớn
       # phải chờ upstream vá, chặn ở đó thì CI đỏ vĩnh viễn và người ta sẽ học cách phớt lờ.
       #
