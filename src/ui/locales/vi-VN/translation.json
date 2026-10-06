@@ -150,7 +150,8 @@
   },
   "notice": {
     "connecting": "Đang kết nối {{name}}…",
-    "joined": "{{name}} đã vào phòng. Mã mới đã sẵn sàng cho người tiếp theo."
+    "joined": "{{name}} đã vào phòng. Mã mới đã sẵn sàng cho người tiếp theo.",
+    "rejoined": "{{name}} đã vào lại phòng."
   },
   "qr": {
     "brightness": "Tăng độ sáng màn hình để dễ quét hơn.",

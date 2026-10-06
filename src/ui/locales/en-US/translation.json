@@ -150,7 +150,8 @@
   },
   "notice": {
     "connecting": "Connecting {{name}}…",
-    "joined": "{{name}} joined. A fresh code is ready for the next player."
+    "joined": "{{name}} joined. A fresh code is ready for the next player.",
+    "rejoined": "{{name}} is back in the room."
   },
   "qr": {
     "brightness": "Raise the screen brightness to make scanning easier.",
