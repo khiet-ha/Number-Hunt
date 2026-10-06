@@ -1,54 +1,14 @@
-import { expect, test, type Browser, type Page } from "@playwright/test"
+import { expect, test } from "@playwright/test"
 
-const APP = "./?nostun&debug"
-
-async function newPlayer(browser: Browser): Promise<Page> {
-  const ctx = await browser.newContext()
-  const page = await ctx.newPage()
-  page.on("pageerror", (e) => console.log("pageerror", e.message))
-  return page
-}
-
-async function inviteUrl(host: Page): Promise<string> {
-  const input = host.getByTestId("invite-url")
-  await expect(input).toHaveCount(1, { timeout: 15000 })
-  return input.inputValue()
-}
-
-async function join(host: Page, guest: Page, name: string) {
-  const url = await inviteUrl(host)
-  const fragment = url.slice(url.indexOf("#"))
-  await guest.goto(APP + fragment)
-  await guest.getByTestId("name").fill(name)
-  await guest.getByTestId("join").click()
-  const answerBox = guest.getByTestId("answer-text")
-  await expect(answerBox).toBeVisible({ timeout: 15000 })
-  const answer = await answerBox.inputValue()
-  expect(answer).toMatch(/^NH2:/)
-  await host
-    .locator("details", { hasText: "Dán mã trả lời" })
-    .locator("summary")
-    .click()
-  await host.getByTestId("answer-input").fill(answer)
-  await host.getByTestId("answer-submit").click()
-  await expect(guest.getByTestId("players")).toContainText(name, {
-    timeout: 20000,
-  })
-}
-
-async function currentTarget(page: Page): Promise<number> {
-  const txt = await page.getByTestId("target").innerText()
-  return Number(txt.match(/\d+/)![0])
-}
-
-async function clickTarget(page: Page) {
-  const n = await currentTarget(page)
-  await page.locator(`.num[data-n="${n}"]`).dispatchEvent("pointerdown")
-  return n
-}
-
-const view = (p: Page) =>
-  p.evaluate(() => (globalThis as any).__nh.node.getView())
+import {
+  APP,
+  clickTarget,
+  inviteUrl,
+  join,
+  newPlayer,
+  submitAnswer,
+  view,
+} from "./helpers"
 
 test("3 players: QR bootstrap, full mesh, play, Host migration over real WebRTC", async ({
   browser,
@@ -132,33 +92,25 @@ test("reload mid-game: rejoin via a member's QR keeps the same slot and score", 
 
   // Carol reloads the tab (sessionStorage keeps identity + persisted log state).
   await carol.goto(APP)
-  await expect(carol.getByText("Bạn đang có một trận dở")).toBeVisible()
+  await expect(carol.getByTestId("resume")).toBeVisible()
   // The game continues without her (quorum 2/3).
   const n2 = await clickTarget(bob)
   await expect(host.locator(`.num[data-n="${n2}"]`)).toHaveClass(/claimed/, {
     timeout: 5000,
   })
 
-  // Bob (any member) issues a rejoin invite.
-  await bob.getByRole("button", { name: "Menu" }).click()
-  await bob
-    .getByRole("button", { name: "Mời người chơi bị rớt vào lại" })
-    .click()
+  // Bob (any member) sees Carol offline and invites her back from the warning bar.
+  await expect(bob.getByTestId("offline-bar")).toBeVisible({ timeout: 15000 })
+  await bob.getByTestId("invite-back").click()
   const url = await inviteUrl(bob)
   console.log("offer URL length", url.length)
+  // Carol's tab recognises a rejoin invite for her game and goes straight on.
   await carol.goto(APP + url.slice(url.indexOf("#")))
-  await carol.getByTestId("name").fill("whatever")
-  await carol.getByTestId("join").click()
   const answerBox = carol.getByTestId("answer-text")
   await expect(answerBox).toBeVisible({ timeout: 15000 })
   const answer = await answerBox.inputValue()
   console.log("answer length", answer.length)
-  await bob
-    .locator("details", { hasText: "Dán mã trả lời" })
-    .locator("summary")
-    .click()
-  await bob.getByTestId("answer-input").fill(answer)
-  await bob.getByTestId("answer-submit").click()
+  await submitAnswer(bob, answer)
 
   await expect(carol.getByTestId("status")).toHaveText("Đã kết nối", {
     timeout: 30000,
