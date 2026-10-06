@@ -22,7 +22,8 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: "npx vite build && npx vite preview --port 4173 --strictPort",
+    command:
+      "pnpm exec vite build && pnpm exec vite preview --port 4173 --strictPort",
     url: "http://localhost:4173/",
     reuseExistingServer: true,
     timeout: 120_000,
