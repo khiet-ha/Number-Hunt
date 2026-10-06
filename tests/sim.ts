@@ -103,7 +103,9 @@ export class SimNetwork {
   /** Silently stop delivering (no link-state event): simulates a frozen peer. */
   blackhole(a: PlayerId, b: PlayerId) {
     const l = this.links.get(this.key(a, b));
-    if (l) l.epoch++, (l.up = false);
+    if (!l) return;
+    l.epoch++;
+    l.up = false;
   }
 
   peersOf(id: PlayerId): PlayerId[] {
