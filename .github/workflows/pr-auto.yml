@@ -60,7 +60,7 @@ jobs:
               // subject-case chặn Sentence-case/UPPER-CASE. Nên: bỏ mã ticket ở
               // đầu (FLEET-12-…) và hạ chữ cái đầu xuống thường.
               let description = slug
-                .replace(/^[A-Za-z]+[-_]?\d+[-_]?/, '')
+                .replace(/^[A-Za-z]+[-_]\d+[-_]/, '')
                 .replace(/[-_]/g, ' ')
                 .trim();
               if (!description) description = slug.replace(/[-_]/g, ' ').trim();
