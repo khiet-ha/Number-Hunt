@@ -1694,6 +1694,14 @@ export class GameNode {
       } else this.pump()
       return
     }
+    if (this.election && this.leaderAlive()) {
+      // A pre-vote started while the leader looked dead; it is reachable again
+      // (same term, no new leader), so abandon the candidacy and unfreeze.
+      this.log("local", "ELECTION_ABANDONED", {
+        note: String(this.election.term),
+      })
+      this.election = null
+    }
     if (!this.leaderAlive()) {
       const el = this.election
       if (el && now > el.deadline) {
