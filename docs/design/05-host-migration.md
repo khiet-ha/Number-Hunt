@@ -6,12 +6,12 @@ Host biến mất ⇒ freeze → phát hiện → bầu (pre-vote, vote) → rec
 
 ## 2. Phát hiện
 
-| Hằng số (`DEFAULT_TIMINGS`) | Giá trị |
-|---|---|
-| heartbeat (mọi peer → mọi peer) | 1 s |
-| peer coi là chết (để tính "sống" / ưu tiên) | 4 s không nghe gì |
-| leader coi là chết | 5 s không có message *claim leader*, **hoặc** link `failed/closed` quá 1.5 s |
-| pre-vote timeout / election timeout | 1 s / 3 s |
+| Hằng số (`DEFAULT_TIMINGS`)                 | Giá trị                                                                      |
+| ------------------------------------------- | ---------------------------------------------------------------------------- |
+| heartbeat (mọi peer → mọi peer)             | 1 s                                                                          |
+| peer coi là chết (để tính "sống" / ưu tiên) | 4 s không nghe gì                                                            |
+| leader coi là chết                          | 5 s không có message _claim leader_, **hoặc** link `failed/closed` quá 1.5 s |
+| pre-vote timeout / election timeout         | 1 s / 3 s                                                                    |
 
 `disconnected` của WebRTC chỉ là tạm thời ⇒ không migrate ngay (W07). `failed/closed` là bằng chứng mạnh ⇒ đường nhanh 1.5 s (W08).
 
@@ -21,7 +21,7 @@ Không có leader sống ⇒ `LocalStatus = MIGRATING`: bỏ click cục bộ (C
 
 ## 4. Ứng viên (liveness) và an toàn (safety)
 
-- **Ưu tiên deterministic**: một peer chỉ tự ứng cử khi *trong góc nhìn của nó* không có thành viên còn sống nào có joinSequence thấp hơn.
+- **Ưu tiên deterministic**: một peer chỉ tự ứng cử khi _trong góc nhìn của nó_ không có thành viên còn sống nào có joinSequence thấp hơn.
 - **An toàn** không dựa vào việc mọi người thấy giống nhau: mỗi peer bầu tối đa **một lần mỗi term** (`votedFor`, persist) ⇒ mỗi term tối đa một leader. Ưu tiên sai lệch chỉ làm chậm, không làm sai.
 
 ## 5. Pre-vote
@@ -62,7 +62,7 @@ Không ai qua được pre-vote ⇒ mọi người MIGRATING vô thời hạn, U
 
 ## 9. Host cũ quay lại
 
-Có term cũ ⇒ message của nó bị bỏ (H06). Nó nhận term mới từ heartbeat, thành peer thường, xin snapshot (H05, R05). Không tự giành lại quyền. Nếu Host khởi động lại *trong cùng term* (reload), heartbeat của nó không claim leader ⇒ các peer migrate ngay.
+Có term cũ ⇒ message của nó bị bỏ (H06). Nó nhận term mới từ heartbeat, thành peer thường, xin snapshot (H05, R05). Không tự giành lại quyền. Nếu Host khởi động lại _trong cùng term_ (reload), heartbeat của nó không claim leader ⇒ các peer migrate ngay.
 
 ## 10. Host chủ động rời
 

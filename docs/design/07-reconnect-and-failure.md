@@ -16,17 +16,17 @@ Không có session (tab khác/thiết bị khác) ⇒ không thể vào lại (k
 
 ## 4. Các tình huống
 
-| Tình huống | Xử lý |
-|---|---|
-| Gap: nhận index > logIndex+1 | không áp dụng; `STATE_REQUEST` (E02) |
-| Commit bị lỡ | heartbeat leader có `logIndex` lớn hơn ⇒ `STATE_REQUEST` |
-| Trùng | index ≤ logIndex ⇒ bỏ; messageId trùng ⇒ bỏ (E01) |
-| Term cũ | bỏ (E03) |
-| Term mới | nhận term, freeze, reconcile (E04) |
-| Hash snapshot sai | xin lại; 3 lần liên tiếp ⇒ **DESYNC** (khoá input, hiện lỗi, tiếp tục xin mỗi 5 s) (R04) |
-| Hash heartbeat khác ở cùng logIndex | bug cục bộ ⇒ xin snapshot, thay state (R04b) |
-| Leader treo không có quorum | PAUSED (04 §5) |
-| Không bầu được | MIGRATING, hiện số người cần (05 §8) |
-| Người chơi rời giữa trận | vẫn là member, giữ điểm & joinSequence, có thể vào lại |
-| Host lobby rời trước khi start | phòng đóng (giới hạn MVP) |
-| Host rời/chết trong trận | migration (05) |
+| Tình huống                          | Xử lý                                                                                    |
+| ----------------------------------- | ---------------------------------------------------------------------------------------- |
+| Gap: nhận index > logIndex+1        | không áp dụng; `STATE_REQUEST` (E02)                                                     |
+| Commit bị lỡ                        | heartbeat leader có `logIndex` lớn hơn ⇒ `STATE_REQUEST`                                 |
+| Trùng                               | index ≤ logIndex ⇒ bỏ; messageId trùng ⇒ bỏ (E01)                                        |
+| Term cũ                             | bỏ (E03)                                                                                 |
+| Term mới                            | nhận term, freeze, reconcile (E04)                                                       |
+| Hash snapshot sai                   | xin lại; 3 lần liên tiếp ⇒ **DESYNC** (khoá input, hiện lỗi, tiếp tục xin mỗi 5 s) (R04) |
+| Hash heartbeat khác ở cùng logIndex | bug cục bộ ⇒ xin snapshot, thay state (R04b)                                             |
+| Leader treo không có quorum         | PAUSED (04 §5)                                                                           |
+| Không bầu được                      | MIGRATING, hiện số người cần (05 §8)                                                     |
+| Người chơi rời giữa trận            | vẫn là member, giữ điểm & joinSequence, có thể vào lại                                   |
+| Host lobby rời trước khi start      | phòng đóng (giới hạn MVP)                                                                |
+| Host rời/chết trong trận            | migration (05)                                                                           |

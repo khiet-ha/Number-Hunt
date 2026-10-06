@@ -34,13 +34,13 @@ Link đầu tiên Host↔player qua QR. Các link player↔player được negot
 
 ## 5. Sở hữu trạng thái
 
-| Replicated (trong `GameState`, hash được) | Cục bộ (không replicate) |
-|---|---|
-| members (id, name, color, joinSequence, secretHash) | LocalStatus (ACTIVE/MIGRATING/PAUSED/…) |
-| config, round, seed, targets, targetIndex | link state, lastSeen, peer links |
-| layoutVersion, scores, claimed | pendingClick, lastReject, countdownEndsAt |
-| phase (COUNTDOWN/PLAYING/FINISHED) | currentTerm, votedFor, accepted (persist, nhưng không replicate) |
-| leadership {hostId, term}, logIndex | leaderId đang biết, election đang chạy |
+| Replicated (trong `GameState`, hash được)           | Cục bộ (không replicate)                                         |
+| --------------------------------------------------- | ---------------------------------------------------------------- |
+| members (id, name, color, joinSequence, secretHash) | LocalStatus (ACTIVE/MIGRATING/PAUSED/…)                          |
+| config, round, seed, targets, targetIndex           | link state, lastSeen, peer links                                 |
+| layoutVersion, scores, claimed                      | pendingClick, lastReject, countdownEndsAt                        |
+| phase (COUNTDOWN/PLAYING/FINISHED)                  | currentTerm, votedFor, accepted (persist, nhưng không replicate) |
+| leadership {hostId, term}, logIndex                 | leaderId đang biết, election đang chạy                           |
 
 ## 6. Bất biến then chốt
 

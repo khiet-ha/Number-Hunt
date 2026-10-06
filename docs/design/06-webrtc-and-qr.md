@@ -15,9 +15,26 @@ Offer nằm trong fragment `#…` nên không bao giờ gửi lên server GitHub
 ## 2. Envelope QR (`src/qr/envelope.ts`)
 
 ```ts
-offer  = { v: 2, t: "o", r: roomId, h: offererId, n: nonce, k: "join" | "rejoin", s: sdp }
-answer = { v: 2, t: "a", r: roomId, h: offererId, n: nonce, p: playerId, m: name,
-           x: join ? sha256(secret) : secret, s: sdp }
+offer = {
+  v: 2,
+  t: "o",
+  r: roomId,
+  h: offererId,
+  n: nonce,
+  k: "join" | "rejoin",
+  s: sdp,
+}
+answer = {
+  v: 2,
+  t: "a",
+  r: roomId,
+  h: offererId,
+  n: nonce,
+  p: playerId,
+  m: name,
+  x: join ? sha256(secret) : secret,
+  s: sdp,
+}
 ```
 
 Đóng gói: lọc SDP (bỏ `a=extmap-allow-mixed`, `a=msid-semantic`, candidate TCP) → JSON → `deflate-raw` (CompressionStream) → base64url; tiền tố `Z` (nén) hoặc `P` (fallback không nén). Thực đo trên Chromium: offer URL ~600 ký tự, answer ~630 ký tự (QR ~version 16, mức L).

@@ -20,23 +20,23 @@ Mọi message đi qua `decode()`: JSON hợp lệ, ≤ 64 KB, đúng protocol, t
 
 ## 2. Danh mục message
 
-| Nhóm | Type | Hướng | Payload |
-|---|---|---|---|
-| Lobby | `LOBBY_STATE` | Host → all | `{hostId, players[{…member, ready}], config}` |
-| | `READY` | player → Host | `{ready}` |
-| | `LEAVE` | any → all | `{}` |
-| | `JOIN_REJECT`, `ROOM_CLOSED` | Host → player | `{reason}` |
-| Lệnh | `CLICK_REQUEST` | player → leader | `{requestId, number, clientTimestamp?}` |
-| | `CLICK_REJECT` | leader → player | `{requestId, reason}` (chỉ để UI phản hồi) |
-| Log | `EVENT_PROPOSE` | leader → all | `{event, commitIndex}` |
-| | `EVENT_ACK` | peer → leader | `{eventId, index}` |
-| | `EVENT_COMMIT` | leader → all | `{event, certificate}` |
-| | `STATE_REQUEST` | peer → leader | `{haveIndex, reason: gap/reconnect/hash/behind}` |
-| | `STATE_SNAPSHOT` | leader → peer | `{state, stateHash, certificate}` |
-| Sống/bầu | `HEARTBEAT` | all → all, 1 s | `{leaderId, logIndex, stateHash, links[], paused}` |
-| | `PRE_VOTE` / `PRE_VOTE_ACK` | ứng viên ↔ all | `{term, logIndex}` / `{term, granted}` |
-| | `HOST_ELECTION` / `ELECTION_ACK` | ứng viên ↔ all | `{term, logIndex}` / `{term, granted, snapshot, accepted}` |
-| Mesh | `SIGNAL` | relay 1 bước | `{origin, target, kind: offer/answer, sdp}` |
+| Nhóm     | Type                             | Hướng           | Payload                                                    |
+| -------- | -------------------------------- | --------------- | ---------------------------------------------------------- |
+| Lobby    | `LOBBY_STATE`                    | Host → all      | `{hostId, players[{…member, ready}], config}`              |
+|          | `READY`                          | player → Host   | `{ready}`                                                  |
+|          | `LEAVE`                          | any → all       | `{}`                                                       |
+|          | `JOIN_REJECT`, `ROOM_CLOSED`     | Host → player   | `{reason}`                                                 |
+| Lệnh     | `CLICK_REQUEST`                  | player → leader | `{requestId, number, clientTimestamp?}`                    |
+|          | `CLICK_REJECT`                   | leader → player | `{requestId, reason}` (chỉ để UI phản hồi)                 |
+| Log      | `EVENT_PROPOSE`                  | leader → all    | `{event, commitIndex}`                                     |
+|          | `EVENT_ACK`                      | peer → leader   | `{eventId, index}`                                         |
+|          | `EVENT_COMMIT`                   | leader → all    | `{event, certificate}`                                     |
+|          | `STATE_REQUEST`                  | peer → leader   | `{haveIndex, reason: gap/reconnect/hash/behind}`           |
+|          | `STATE_SNAPSHOT`                 | leader → peer   | `{state, stateHash, certificate}`                          |
+| Sống/bầu | `HEARTBEAT`                      | all → all, 1 s  | `{leaderId, logIndex, stateHash, links[], paused}`         |
+|          | `PRE_VOTE` / `PRE_VOTE_ACK`      | ứng viên ↔ all  | `{term, logIndex}` / `{term, granted}`                     |
+|          | `HOST_ELECTION` / `ELECTION_ACK` | ứng viên ↔ all  | `{term, logIndex}` / `{term, granted, snapshot, accepted}` |
+| Mesh     | `SIGNAL`                         | relay 1 bước    | `{origin, target, kind: offer/answer, sdp}`                |
 
 Đổi tên so với bản gốc: `RECONNECT_REQUEST` ⇒ `STATE_REQUEST{reason:"reconnect"}` (danh tính đã được xác thực khi tạo link); `HOST_CHANGED/HOST_READY/HOST_READY_ACK` ⇒ entry `HOST_CHANGED`; `GAME_CONFIG/COUNTDOWN_STARTED/GAME_STARTED/GAME_FINISHED/PLAYER_STATUS` ⇒ `LOBBY_STATE` + entry log + suy ra trong reducer.
 
