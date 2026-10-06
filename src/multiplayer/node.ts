@@ -181,6 +181,19 @@ export function loadPersisted(
   }
 }
 
+/** Forget the saved replication state of a player (leaving for good). */
+export function clearPersisted(
+  store: KeyValueStore,
+  roomId: string,
+  id: string
+): void {
+  try {
+    store.remove(persistKey(roomId, id))
+  } catch {
+    /* ignore */
+  }
+}
+
 function randomId(random: () => number, len = 10): string {
   const abc = "abcdefghijklmnopqrstuvwxyz0123456789"
   let s = ""
@@ -419,6 +432,15 @@ export class GameNode {
     this.broadcastLobby()
     this.notify()
     return null
+  }
+
+  /** Lobby Host: drop a guest (e.g. one whose connection never completed). */
+  kickGuest(id: PlayerId): boolean {
+    if (!this.isLobbyHost() || id === this.id) return false
+    const had = this.lobby?.players.some((p) => p.id === id) ?? false
+    this.removeGuest(id)
+    this.notify()
+    return had
   }
 
   canAcceptGuests(): boolean {

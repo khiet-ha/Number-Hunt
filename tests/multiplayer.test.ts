@@ -65,6 +65,24 @@ describe("lobby", () => {
     expect(status(room, "p2")).toBe("CLOSED")
   })
 
+  it("the lobby Host can remove a stuck guest, who is told why", () => {
+    const room = createLobby(3)
+    expect(room.node("p1").kickGuest("p3")).toBe(true)
+    room.run(300)
+    expect(
+      room
+        .node("p1")
+        .getView()
+        .lobby!.players.map((p) => p.id)
+    ).toEqual(["p1", "p2"])
+    expect(room.node("p3").getView().status).toBe("CLOSED")
+    expect(room.node("p3").getView().closedReason).toBe("removed")
+    // Only the Host may remove, and never itself or a stranger.
+    expect(room.node("p2").kickGuest("p1")).toBe(false)
+    expect(room.node("p1").kickGuest("p1")).toBe(false)
+    expect(room.node("p1").kickGuest("nobody")).toBe(false)
+  })
+
   it("player limit enforced", () => {
     const room = createLobby(2, { config: { playerLimit: 2 } })
     expect(

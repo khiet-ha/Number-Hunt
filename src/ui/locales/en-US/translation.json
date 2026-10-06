@@ -1,9 +1,11 @@
 {
   "answer": {
     "copy": "Copy reply code",
+    "elapsed": "Waited {{seconds}} s",
     "qrLabel": "Reply code",
     "showToHost": "Show this screen to the Host to scan.",
     "showToInviter": "Show this screen to the person who invited you.",
+    "slowHint": "Not connecting? Check that the Host scanned your reply code, both devices are on the same Wi‑Fi (avoid mobile data), then try again with a new invite.",
     "title": "Almost there!",
     "titleRejoin": "Rejoin the game",
     "waiting": "Waiting for connection…"
@@ -62,6 +64,7 @@
     "notMember": "This person is not in the game",
     "offerInvalid": "Invalid invite code",
     "offerVersion": "Unsupported invite version",
+    "openElsewhere": "This game is open in another tab",
     "roomFull": "The room is full",
     "selfJoin": "You cannot join your own room",
     "unexpected": "Something went wrong: {{detail}}",
@@ -83,6 +86,7 @@
     "menu": "Menu",
     "nextRules": "Change rules for the next round",
     "noTarget": "All found!",
+    "offline": "Disconnected: {{names}}",
     "paused": "Paused",
     "pausedDetail": "At least {{quorum}}/{{total}} players must be online to continue ({{alive}} online)",
     "rematch": "Play again",
@@ -96,16 +100,21 @@
     "forgetGame": "Discard this game",
     "namePlaceholder": "e.g. Alex",
     "pasteInvite": "Paste invite link / code",
-    "resume": "You have an unfinished game in room {{roomId}}. Ask someone in the room to open “Invite a dropped player back” and scan their code.",
     "scanInvite": "Scan invite code",
     "scanRejoin": "Scan rejoin code"
   },
   "invite": {
+    "autoRenew": "The invite renews itself when it expires.",
     "copyLink": "Copy invite link",
     "creating": "Creating invite…",
+    "expired": "This code has expired",
+    "expiresIn": "Code expires in {{time}}",
     "pasteAnswer": "Paste the reply code manually",
     "qrLabel": "Invite code",
+    "renew": "Create a new code",
     "scanAnswer": "Scan reply code",
+    "share": "Share invite link",
+    "shareText": "Join room {{roomId}} and play Number Hunt with me!",
     "step1": "The player scans this code with their phone camera.",
     "step2": "They will see a reply code — tap “Scan reply code” to scan it.",
     "submit": "Confirm",
@@ -113,11 +122,19 @@
     "titleRejoin": "Invite back"
   },
   "join": {
+    "decoding": "Reading the invite…",
+    "hint": "Stay near the Host on the same Wi‑Fi for a stable connection.",
     "preparing": "Preparing…",
+    "rejoinAction": "Rejoin",
+    "rejoinBody": "You will rejoin as {{name}} with your old score.",
+    "rejoinTitle": "Rejoin room {{roomId}}",
+    "roomLabel": "Room {{roomId}}",
     "title": "Join a room"
   },
   "lobby": {
     "entering": "Entering room…",
+    "kick": "Remove",
+    "kickConfirm": "Remove {{name}} from the room?",
     "linked": "connected",
     "linking": "connecting…",
     "notReady": "Not ready",
@@ -127,10 +144,18 @@
     "setReady": "I'm ready",
     "start": "Start",
     "unsetReady": "Not ready yet",
+    "waitingFirst": "Nobody here yet. Let a player scan the code below to join.",
     "you": "(you)"
   },
   "notice": {
-    "connecting": "Connecting {{name}}…"
+    "connecting": "Connecting {{name}}…",
+    "joined": "{{name}} joined. A fresh code is ready for the next player.",
+    "rejoined": "{{name}} is back in the room."
+  },
+  "qr": {
+    "brightness": "Raise the screen brightness to make scanning easier.",
+    "shrink": "Close",
+    "zoom": "Enlarge code"
   },
   "reject": {
     "claimed": "Already found",
@@ -144,8 +169,19 @@
     "unknown": "Tap not accepted",
     "wrongNumber": "Wrong number!"
   },
+  "resume": {
+    "forgetConfirm": "Discard this game? You will not be able to rejoin it.",
+    "keepScore": "You will come back to your old seat with your old score. Even if you were the Host, the game kept going because another player was elected Host.",
+    "lastSeen": "You were last in the room: {{ago}}",
+    "openElsewhere": "This game is open in another tab. Keep playing there, or close it and try again in a few seconds.",
+    "pasteCode": "Paste rejoin code",
+    "step1": "Ask someone who is still in the room to tap “Invite a dropped player back” (in the ☰ menu or the warning bar).",
+    "step2": "Scan the code they show (or paste it).",
+    "title": "Unfinished game in room {{roomId}}"
+  },
   "scanner": {
     "close": "Close camera",
+    "hint": "Point the camera at the QR code.",
     "noPermission": "Could not open the camera. Allow camera access or paste the code manually.",
     "unsupported": "This browser cannot use the camera (HTTPS required)."
   },
@@ -157,5 +193,15 @@
     "MIGRATING": "Electing new Host…",
     "PAUSED": "Paused — waiting for players",
     "SYNCING": "Syncing…"
+  },
+  "steps": {
+    "guestScan": "Scan the invite",
+    "guestShow": "Show your reply code to the Host",
+    "guestShowRejoin": "Show your reply code to whoever invited you",
+    "guestWait": "Wait for the devices to connect",
+    "hostDone": "The devices connect automatically",
+    "hostScan": "You scan their reply code",
+    "hostShow": "The player scans the invite",
+    "label": "Step {{current}}/{{total}}"
   }
 }

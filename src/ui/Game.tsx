@@ -212,6 +212,10 @@ export function Game({ c, v }: { c: AppController; v: NodeView }) {
   )
   const node = c.node!
   const target = state ? currentTarget(state) : null
+  // Members whose connection is down: anyone in the room can invite them back.
+  const offline = v.peers
+    .filter((p) => !p.alive)
+    .map((p) => state?.members.find((m) => m.id === p.id)?.name ?? p.id)
   const reject =
     v.lastReject && Date.now() - v.lastReject.at < 1500 ? v.lastReject : null
   return (
@@ -240,6 +244,21 @@ export function Game({ c, v }: { c: AppController; v: NodeView }) {
         </button>
       </header>
       {state && <Scores state={state} v={v} />}
+      {offline.length > 0 && state?.phase !== "FINISHED" && (
+        <div class="offline-bar" data-testid="offline-bar">
+          <span>{t("game.offline", { names: offline.join(", ") })}</span>
+          <button
+            class="secondary"
+            data-testid="invite-back"
+            onClick={() => void c.createInvite("rejoin")}
+          >
+            {t("game.inviteBack")}
+          </button>
+        </div>
+      )}
+      {c.state.invite?.kind === "rejoin" && (
+        <InvitePanel c={c} title={t("invite.titleRejoin")} />
+      )}
       {reject && (
         <div class={`toast ${reject.reason}`}>
           {tCode("reject", reject.reason)}
@@ -263,9 +282,6 @@ export function Game({ c, v }: { c: AppController; v: NodeView }) {
           >
             {t("game.inviteBack")}
           </button>
-          {c.state.invite?.kind === "rejoin" && (
-            <InvitePanel c={c} title={t("invite.titleRejoin")} />
-          )}
           <button
             class="danger"
             onClick={() => confirm(t("game.leaveConfirm")) && c.leave()}

@@ -178,10 +178,27 @@ export function Lobby({ c, v }: { c: AppController; v: NodeView }) {
                 <span class={`tag ${p.ready ? "ok" : ""}`}>
                   {p.ready ? t("lobby.ready") : t("lobby.notReady")}
                 </span>
+                {isHost && p.id !== v.selfId && (
+                  <button
+                    class="kick"
+                    data-testid={`kick-${p.id}`}
+                    aria-label={`${t("lobby.kick")} ${p.name}`}
+                    title={t("lobby.kick")}
+                    onClick={() =>
+                      confirm(t("lobby.kickConfirm", { name: p.name })) &&
+                      node.kickGuest(p.id)
+                    }
+                  >
+                    ✕
+                  </button>
+                )}
               </li>
             )
           })}
         </ul>
+        {isHost && lobby.players.length === 1 && (
+          <p class="muted">{t("lobby.waitingFirst")}</p>
+        )}
         {!isHost && me && (
           <button
             data-testid="ready"
